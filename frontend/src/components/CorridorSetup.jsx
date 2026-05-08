@@ -96,8 +96,8 @@ export default function CorridorSetup() {
     <div className="max-w-4xl mx-auto p-4">
       {/* Page Header */}
       <div className="mb-4">
-        <h2 className="text-base font-semibold text-gray-900 dark:text-white">Corridor Setup</h2>
-        <p className="text-gray-500 dark:text-gray-400 text-xs mt-0.5">
+        <h2 className="text-base font-semibold" style={{ color: '#111111' }}>Corridor Setup</h2>
+        <p className="text-xs mt-0.5" style={{ color: '#888888' }}>
           Configure corridor properties and add intersections
         </p>
       </div>
@@ -136,7 +136,7 @@ export default function CorridorSetup() {
           <div>
             <h3 className="section-header mb-0">Intersections</h3>
             {intersections.length > 1 && (
-              <p className="text-[11px] text-gray-500 dark:text-gray-500 mt-0.5">
+              <p className="text-[11px] mt-0.5" style={{ color: '#888888' }}>
                 Total length: {totalCorridor().toLocaleString()} ft ({(totalCorridor() / 5280).toFixed(2)} mi)
               </p>
             )}
@@ -155,12 +155,15 @@ export default function CorridorSetup() {
 
         {intersections.length === 0 && (
           <div className="text-center py-8">
-            <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 flex items-center justify-center mx-auto mb-2" style={{ borderRadius: 4 }}>
-              <svg className="w-5 h-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div
+              className="w-10 h-10 flex items-center justify-center mx-auto mb-2"
+              style={{ backgroundColor: '#F8F8F7', border: '1px solid #E2E2E0', borderRadius: 4 }}
+            >
+              <svg className="w-5 h-5" style={{ color: '#AAAAAA' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
               </svg>
             </div>
-            <p className="text-gray-500 dark:text-gray-500 text-xs">
+            <p className="text-xs" style={{ color: '#888888' }}>
               No intersections yet. Add up to 12 intersections to your corridor.
             </p>
           </div>
@@ -169,8 +172,10 @@ export default function CorridorSetup() {
         {intersections.length > 0 && (
           <div className="space-y-1.5">
             {/* Column headers */}
-            <div className="grid items-center gap-2 px-1 pb-1 border-b border-gray-100 dark:border-gray-700"
-              style={{ gridTemplateColumns: '1.5rem 1fr 120px 120px 6rem 2rem' }}>
+            <div
+              className="grid items-center gap-2 px-1 pb-1"
+              style={{ gridTemplateColumns: '1.5rem 1fr 120px 120px 6rem 2rem', borderBottom: '1px solid #E2E2E0' }}
+            >
               <div />
               <div className="label">Intersection Name</div>
               <div className="label">Type</div>
@@ -187,18 +192,34 @@ export default function CorridorSetup() {
                 onDragOver={(e) => onDragOver(e, index)}
                 onDrop={() => onDrop(index)}
                 onDragEnd={() => { setDragIndex(null); setOverIndex(null) }}
-                className={`grid items-center gap-2 p-1.5 transition-colors duration-100 ${
-                  overIndex === index && dragIndex !== index
-                    ? 'border border-blue-400 bg-blue-50 dark:bg-blue-900/20'
-                    : 'border border-transparent hover:bg-gray-50 dark:hover:bg-gray-700/40'
-                }`}
-                style={{ gridTemplateColumns: '1.5rem 1fr 120px 120px 6rem 2rem', borderRadius: 3 }}
+                className="grid items-center gap-2 p-1.5 transition-colors duration-100"
+                style={{
+                  gridTemplateColumns: '1.5rem 1fr 120px 120px 6rem 2rem',
+                  borderRadius: 3,
+                  border: overIndex === index && dragIndex !== index
+                    ? '1px solid #111111'
+                    : '1px solid transparent',
+                  backgroundColor: overIndex === index && dragIndex !== index
+                    ? '#F8F8F7'
+                    : 'transparent',
+                }}
+                onMouseEnter={(e) => {
+                  if (!(overIndex === index && dragIndex !== index)) {
+                    e.currentTarget.style.backgroundColor = '#FAFAF9'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!(overIndex === index && dragIndex !== index)) {
+                    e.currentTarget.style.backgroundColor = 'transparent'
+                  }
+                }}
               >
                 {/* Drag Handle + Index */}
                 <div className="flex flex-col items-center gap-0.5">
-                  <span className="text-gray-400 dark:text-gray-600 text-[10px]">{index + 1}</span>
+                  <span className="text-[10px]" style={{ color: '#AAAAAA' }}>{index + 1}</span>
                   <svg
-                    className="w-3 h-3 text-gray-400 dark:text-gray-600 cursor-grab active:cursor-grabbing"
+                    className="w-3 h-3 cursor-grab active:cursor-grabbing"
+                    style={{ color: '#AAAAAA' }}
                     fill="none" stroke="currentColor" viewBox="0 0 24 24"
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -247,12 +268,15 @@ export default function CorridorSetup() {
                   Edit
                 </button>
 
-                {/* Reorder / Delete */}
+                {/* Reorder */}
                 <div className="flex flex-col gap-0.5">
                   <button
                     onClick={() => handleMoveUp(index)}
                     disabled={index === 0}
-                    className="text-gray-400 dark:text-gray-600 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-30 transition-colors p-0.5"
+                    className="disabled:opacity-30 transition-colors p-0.5"
+                    style={{ color: '#AAAAAA', background: 'none', border: 'none' }}
+                    onMouseEnter={(e) => { if (!e.currentTarget.disabled) e.currentTarget.style.color = '#333333' }}
+                    onMouseLeave={(e) => e.currentTarget.style.color = '#AAAAAA'}
                     title="Move up"
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -262,7 +286,10 @@ export default function CorridorSetup() {
                   <button
                     onClick={() => handleMoveDown(index)}
                     disabled={index === intersections.length - 1}
-                    className="text-gray-400 dark:text-gray-600 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-30 transition-colors p-0.5"
+                    className="disabled:opacity-30 transition-colors p-0.5"
+                    style={{ color: '#AAAAAA', background: 'none', border: 'none' }}
+                    onMouseEnter={(e) => { if (!e.currentTarget.disabled) e.currentTarget.style.color = '#333333' }}
+                    onMouseLeave={(e) => e.currentTarget.style.color = '#AAAAAA'}
                     title="Move down"
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -276,13 +303,16 @@ export default function CorridorSetup() {
         )}
 
         {intersections.length > 0 && (
-          <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex flex-col gap-1.5">
+          <div className="mt-3 pt-3 flex flex-col gap-1.5" style={{ borderTop: '1px solid #E2E2E0' }}>
             {intersections.map((ix, index) => (
-              <div key={ix.id} className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-500">
-                <span className="font-medium text-gray-600 dark:text-gray-400">{ix.name || `Intersection ${index + 1}`}</span>
+              <div key={ix.id} className="flex items-center justify-between text-[11px]" style={{ color: '#888888' }}>
+                <span className="font-medium" style={{ color: '#444444' }}>{ix.name || `Intersection ${index + 1}`}</span>
                 <button
+                  className="transition-colors"
+                  style={{ color: '#DC2626', background: 'none', border: 'none' }}
                   onClick={() => handleRemoveIntersection(ix.id)}
-                  className="text-red-500 hover:text-red-400 transition-colors"
+                  onMouseEnter={(e) => e.currentTarget.style.color = '#991B1B'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = '#DC2626'}
                 >
                   Remove
                 </button>

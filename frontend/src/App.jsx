@@ -32,17 +32,6 @@ export default function App() {
 
   const isProjectOpen = !!currentProject
 
-  // Theme management
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark')
-  useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
-    localStorage.setItem('theme', theme)
-  }, [theme])
-
   // Save confirmation toast
   const [savedToast, setSavedToast] = useState(false)
   const prevSavingRef = useRef(false)
@@ -67,44 +56,55 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
-      {/* Top Navigation Header */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-0 flex items-center gap-3 sticky top-0 z-50" style={{ height: 40 }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#F8F8F7' }}>
+      {/* Top Navigation — dark */}
+      <header
+        className="flex items-center gap-3 px-4 sticky top-0 z-50"
+        style={{ height: 40, backgroundColor: '#111111', borderBottom: '1px solid #2A2A2A' }}
+      >
         {/* Logo */}
         <div className="flex items-center gap-2 min-w-max">
-          <div className="w-6 h-6 bg-blue-600 flex items-center justify-center text-[11px] font-bold text-white" style={{ borderRadius: 3 }}>
+          <div
+            className="w-6 h-6 flex items-center justify-center text-[11px] font-bold"
+            style={{ backgroundColor: '#FFFFFF', color: '#111111', borderRadius: 3 }}
+          >
             TS
           </div>
-          <span className="font-semibold text-gray-900 dark:text-white text-xs tracking-wide hidden sm:block">
+          <span className="font-semibold text-xs tracking-wide hidden sm:block" style={{ color: '#FFFFFF' }}>
             Traffic Corridor Sim
           </span>
         </div>
 
         {/* Separator */}
         {isProjectOpen && (
-          <div className="h-4 w-px bg-gray-300 dark:bg-gray-600 hidden sm:block" />
+          <div className="h-4 w-px hidden sm:block" style={{ backgroundColor: '#333333' }} />
         )}
 
         {/* Project name */}
         {isProjectOpen && (
-          <span className="text-gray-600 dark:text-gray-400 text-xs truncate max-w-[200px]">
+          <span className="text-xs truncate max-w-[200px]" style={{ color: '#888888' }}>
             {currentProject.name}
           </span>
         )}
 
-        {/* Nav tabs — only when project open */}
+        {/* Nav tabs */}
         {isProjectOpen && (
           <nav className="flex items-center gap-0.5 ml-1">
             {NAV_ITEMS.map((item) => (
               <button
                 key={item.view}
                 onClick={() => setActiveView(item.view)}
-                className={`px-2.5 py-0 text-[12px] font-medium transition-colors duration-150 ${
-                  activeView === item.view
-                    ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
-                style={{ height: 40, borderBottom: activeView === item.view ? '2px solid #3b82f6' : '2px solid transparent' }}
+                className="px-2.5 py-0 text-[12px] font-medium transition-colors duration-150"
+                style={{
+                  height: 40,
+                  color: activeView === item.view ? '#FFFFFF' : '#888888',
+                  borderBottom: activeView === item.view ? '2px solid #FFFFFF' : '2px solid transparent',
+                  background: 'transparent',
+                  border: 'none',
+                  borderBottom: activeView === item.view ? '2px solid #FFFFFF' : '2px solid transparent',
+                }}
+                onMouseEnter={(e) => { if (activeView !== item.view) e.currentTarget.style.color = '#CCCCCC' }}
+                onMouseLeave={(e) => { if (activeView !== item.view) e.currentTarget.style.color = '#888888' }}
               >
                 {item.label}
               </button>
@@ -115,19 +115,23 @@ export default function App() {
         {/* Spacer */}
         <div className="flex-1" />
 
-        {/* Timing plan toggle — only when project open */}
+        {/* Timing plan toggle */}
         {isProjectOpen && (
-          <div className="flex items-center gap-0.5 bg-gray-100 dark:bg-gray-900 p-0.5" style={{ borderRadius: 3 }}>
+          <div
+            className="flex items-center gap-0.5 p-0.5"
+            style={{ backgroundColor: '#1E1E1E', borderRadius: 3 }}
+          >
             {PLANS.map((plan) => (
               <button
                 key={plan}
                 onClick={() => setActivePlan(plan)}
-                className={`px-2.5 py-0.5 text-[11px] font-semibold transition-colors duration-150 ${
-                  activePlan === plan
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                }`}
-                style={{ borderRadius: 2 }}
+                className="px-2.5 py-0.5 text-[11px] font-semibold transition-colors duration-150"
+                style={{
+                  borderRadius: 2,
+                  backgroundColor: activePlan === plan ? '#FFFFFF' : 'transparent',
+                  color: activePlan === plan ? '#111111' : '#888888',
+                  border: 'none',
+                }}
               >
                 {plan}
               </button>
@@ -139,10 +143,10 @@ export default function App() {
         {isProjectOpen && (
           <div className="flex items-center gap-2">
             {saveError && (
-              <span className="text-red-500 text-[11px]">Save failed</span>
+              <span className="text-[11px]" style={{ color: '#EF4444' }}>Save failed</span>
             )}
             {savedToast && !saveError && (
-              <span className="text-green-500 dark:text-green-400 text-[11px] flex items-center gap-1">
+              <span className="text-[11px] flex items-center gap-1" style={{ color: '#22C55E' }}>
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
@@ -152,11 +156,12 @@ export default function App() {
             <button
               onClick={saveProject}
               disabled={isSaving}
-              className="btn-primary gap-1"
+              className="inline-flex items-center font-medium text-[12px] transition-colors disabled:opacity-40"
+              style={{ height: 28, padding: '0 12px', borderRadius: 3, backgroundColor: '#FFFFFF', color: '#111111', border: 'none', whiteSpace: 'nowrap' }}
             >
               {isSaving ? (
                 <>
-                  <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 animate-spin mr-1" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
@@ -167,33 +172,14 @@ export default function App() {
           </div>
         )}
 
-        {/* Theme toggle */}
-        <button
-          onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
-          className="btn-ghost px-2"
-          title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-        >
-          {theme === 'dark' ? (
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-            </svg>
-          ) : (
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-            </svg>
-          )}
-        </button>
-
         {/* Dashboard button */}
         {isProjectOpen && (
           <button
-            onClick={() => {
-              saveProject()
-              closeProject()
-            }}
-            className="btn-ghost"
+            onClick={() => { saveProject(); closeProject() }}
+            className="text-[12px] font-medium transition-colors"
+            style={{ color: '#888888', background: 'transparent', border: 'none', padding: '0 8px', height: 28, borderRadius: 3 }}
+            onMouseEnter={(e) => e.currentTarget.style.color = '#FFFFFF'}
+            onMouseLeave={(e) => e.currentTarget.style.color = '#888888'}
           >
             Dashboard
           </button>

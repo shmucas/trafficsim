@@ -3,12 +3,9 @@ import useProjectStore from '../store/projectStore'
 import SimulationCanvas, { CANVAS_HEIGHT } from './SimulationCanvas'
 
 const LOS_COLORS = {
-  A: 'text-green-600 dark:text-green-400',
-  B: 'text-green-600 dark:text-green-400',
-  C: 'text-yellow-600 dark:text-yellow-400',
-  D: 'text-yellow-600 dark:text-yellow-500',
-  E: 'text-orange-600 dark:text-orange-400',
-  F: 'text-red-600 dark:text-red-400',
+  A: '#16A34A', B: '#16A34A',
+  C: '#CA8A04', D: '#D97706',
+  E: '#EA580C', F: '#DC2626',
 }
 
 export default function SimulationView() {
@@ -24,7 +21,6 @@ export default function SimulationView() {
   const intersections = currentProject?.intersections || []
   const results = currentProject?.simulation_results
 
-  // playback state
   const [isPlaying, setIsPlaying] = useState(false)
   const [simT, setSimT] = useState(0)
   const [speed, setSpeed] = useState(1)
@@ -83,8 +79,8 @@ export default function SimulationView() {
   return (
     <div className="max-w-5xl mx-auto p-4">
       <div className="mb-4">
-        <h2 className="text-base font-semibold text-gray-900 dark:text-white">Simulation</h2>
-        <p className="text-gray-500 dark:text-gray-400 text-xs mt-0.5">
+        <h2 className="text-base font-semibold" style={{ color: '#111111' }}>Simulation</h2>
+        <p className="text-xs mt-0.5" style={{ color: '#888888' }}>
           HCM 7th Edition corridor analysis — {activePlan} timing plan
         </p>
       </div>
@@ -95,38 +91,37 @@ export default function SimulationView() {
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
           <div>
             <div className="label mb-0.5">Corridor</div>
-            <div className="text-gray-900 dark:text-white font-medium">{currentProject.name}</div>
+            <div className="font-medium" style={{ color: '#111111' }}>{currentProject.name}</div>
           </div>
           <div>
             <div className="label mb-0.5">Active Plan</div>
-            <div className="text-blue-600 dark:text-blue-300 font-semibold">{activePlan}</div>
+            <div className="font-semibold" style={{ color: '#111111' }}>{activePlan}</div>
           </div>
           <div>
             <div className="label mb-0.5">Intersections</div>
-            <div className="text-gray-900 dark:text-white font-medium">
+            <div className="font-medium" style={{ color: '#111111' }}>
               {readyCount} / {intersections.length} ready
             </div>
           </div>
         </div>
       </div>
 
-      {/* 2D Visual Simulation — full corridor */}
+      {/* 2D Visual Simulation */}
       {intersections.length > 0 && (
         <div className="card mb-4">
           <div className="flex items-center justify-between mb-2">
             <h3 className="section-header mb-0">Corridor Visual</h3>
-            <div className="flex items-center gap-3 text-[11px] text-gray-500 dark:text-gray-500">
+            <div className="flex items-center gap-3 text-[11px]" style={{ color: '#888888' }}>
               <span className="flex items-center gap-1">
-                <span className="inline-block w-2.5 h-2.5 rounded-full bg-blue-500" /> Queued
+                <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#3B82F6' }} /> Queued
               </span>
               <span className="flex items-center gap-1">
-                <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400" /> Moving
+                <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#34D399' }} /> Moving
               </span>
               <span>{intersections.length} int{intersections.length !== 1 ? 's' : ''} · {activePlan}</span>
             </div>
           </div>
 
-          {/* Scrollable canvas wrapper */}
           <div className="mb-3 overflow-x-auto" style={{ maxHeight: CANVAS_HEIGHT + 4 }}>
             <SimulationCanvas
               intersections={intersections}
@@ -137,30 +132,23 @@ export default function SimulationView() {
 
           {/* Playback controls */}
           <div className="flex flex-col gap-2">
-            {/* Seek bar */}
             <div className="flex items-center gap-2">
-              <span className="text-[11px] text-gray-500 dark:text-gray-500 w-8 text-right font-mono">
+              <span className="text-[11px] w-8 text-right font-mono" style={{ color: '#888888' }}>
                 {tmod.toFixed(1)}s
               </span>
               <input
                 type="range"
-                min={0}
-                max={totalT}
-                step={0.1}
+                min={0} max={totalT} step={0.1}
                 value={tmod}
-                onChange={(e) => {
-                  setIsPlaying(false)
-                  setSimT(Number(e.target.value))
-                }}
-                className="flex-1 accent-blue-500"
+                onChange={(e) => { setIsPlaying(false); setSimT(Number(e.target.value)) }}
+                className="flex-1 accent-black"
                 style={{ height: 3 }}
               />
-              <span className="text-[11px] text-gray-500 dark:text-gray-500 w-10 font-mono">
+              <span className="text-[11px] w-10 font-mono" style={{ color: '#888888' }}>
                 {totalT}s
               </span>
             </div>
 
-            {/* Buttons */}
             <div className="flex items-center gap-2 justify-center">
               <button
                 onClick={() => { setSimT(0); setIsPlaying(false) }}
@@ -172,10 +160,7 @@ export default function SimulationView() {
                 </svg>
               </button>
 
-              <button
-                onClick={() => setIsPlaying((p) => !p)}
-                className="btn-primary gap-1.5 px-4"
-              >
+              <button onClick={() => setIsPlaying((p) => !p)} className="btn-primary gap-1.5 px-4">
                 {isPlaying ? (
                   <>
                     <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -201,21 +186,20 @@ export default function SimulationView() {
               </button>
             </div>
 
-            {/* Cycle progress bar */}
-            <div className="relative h-1.5 bg-gray-200 dark:bg-gray-800 overflow-hidden" style={{ borderRadius: 2 }}>
+            <div className="relative h-1.5 overflow-hidden" style={{ backgroundColor: '#E2E2E0', borderRadius: 2 }}>
               <div
-                className="absolute h-full bg-blue-600 transition-none"
-                style={{ width: `${((tmod % maxCycle) / maxCycle) * 100}%`, borderRadius: 2 }}
+                className="absolute h-full transition-none"
+                style={{ width: `${((tmod % maxCycle) / maxCycle) * 100}%`, backgroundColor: '#111111', borderRadius: 2 }}
               />
             </div>
-            <div className="text-center text-[11px] text-gray-500 dark:text-gray-500 font-mono">
+            <div className="text-center text-[11px] font-mono" style={{ color: '#888888' }}>
               Cycle: {(tmod % maxCycle).toFixed(1)}s / {maxCycle}s
             </div>
           </div>
         </div>
       )}
 
-      {/* Intersection readiness checklist */}
+      {/* Intersection readiness */}
       {intersections.length > 0 && (
         <div className="card mb-4">
           <h3 className="section-header">Intersection Readiness</h3>
@@ -231,25 +215,26 @@ export default function SimulationView() {
               return (
                 <div
                   key={ix.id}
-                  className="flex items-center justify-between px-3 py-2 border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50"
-                  style={{ borderRadius: 3 }}
+                  className="flex items-center justify-between px-3 py-2"
+                  style={{ border: '1px solid #E2E2E0', borderRadius: 3, backgroundColor: '#FAFAF9' }}
                 >
                   <div className="flex items-center gap-2">
-                    <div className={`w-1.5 h-1.5 rounded-full ${
-                      hasApproaches && hasActivePlan ? 'bg-green-500' : 'bg-yellow-500'
-                    }`} />
-                    <span className="text-gray-800 dark:text-gray-200 text-xs font-medium">{ix.name}</span>
-                    <span className="text-[11px] text-gray-400 dark:text-gray-500">{ix.type}</span>
+                    <div
+                      className="w-1.5 h-1.5 rounded-full"
+                      style={{ backgroundColor: hasApproaches && hasActivePlan ? '#16A34A' : '#D97706' }}
+                    />
+                    <span className="text-xs font-medium" style={{ color: '#111111' }}>{ix.name}</span>
+                    <span className="text-[11px]" style={{ color: '#AAAAAA' }}>{ix.type}</span>
                   </div>
                   <div className="flex items-center gap-3 text-[11px]">
-                    <span className={hasApproaches ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-600'}>
-                      {hasApproaches ? '✓ Geom' : '✗ Geom'}
+                    <span style={{ color: hasApproaches ? '#16A34A' : '#CCCCCC' }}>
+                      {hasApproaches ? '+ Geom' : '- Geom'}
                     </span>
-                    <span className={hasActivePlan ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-600'}>
-                      {hasActivePlan ? '✓ Timing' : '✗ Timing'}
+                    <span style={{ color: hasActivePlan ? '#16A34A' : '#CCCCCC' }}>
+                      {hasActivePlan ? '+ Timing' : '- Timing'}
                     </span>
-                    <span className={hasDemand ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-500'}>
-                      {hasDemand ? '✓ Demand' : '⚠ Demand'}
+                    <span style={{ color: hasDemand ? '#16A34A' : '#D97706' }}>
+                      {hasDemand ? '+ Demand' : '~ Demand'}
                     </span>
                   </div>
                 </div>
@@ -261,32 +246,32 @@ export default function SimulationView() {
 
       {/* Last run summary */}
       {results?.status === 'complete' && (
-        <div className="card mb-4 border-blue-200 dark:border-blue-800/50">
+        <div className="card mb-4" style={{ borderColor: '#E2E2E0' }}>
           <h3 className="section-header">Last Run — {results.active_plan} Plan</h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
             <div>
               <div className="label mb-0.5">Corridor Delay</div>
-              <div className="text-gray-900 dark:text-white font-bold text-base">
+              <div className="font-bold text-base" style={{ color: '#111111' }}>
                 {results.corridor_summary.avg_delay_s_veh}
-                <span className="text-gray-500 dark:text-gray-400 text-[11px] ml-1">s/veh</span>
+                <span className="text-[11px] ml-1" style={{ color: '#888888' }}>s/veh</span>
               </div>
             </div>
             <div>
               <div className="label mb-0.5">Corridor LOS</div>
-              <div className={`font-bold text-xl ${LOS_COLORS[results.corridor_summary.corridor_los] || 'text-gray-900 dark:text-white'}`}>
+              <div className="font-bold text-xl" style={{ color: LOS_COLORS[results.corridor_summary.corridor_los] || '#111111' }}>
                 {results.corridor_summary.corridor_los}
               </div>
             </div>
             <div>
               <div className="label mb-0.5">Total Throughput</div>
-              <div className="text-gray-900 dark:text-white font-bold text-base">
+              <div className="font-bold text-base" style={{ color: '#111111' }}>
                 {results.corridor_summary.total_throughput_vph.toLocaleString()}
-                <span className="text-gray-500 dark:text-gray-400 text-[11px] ml-1">vph</span>
+                <span className="text-[11px] ml-1" style={{ color: '#888888' }}>vph</span>
               </div>
             </div>
             <div>
               <div className="label mb-0.5">Intersections</div>
-              <div className="text-gray-900 dark:text-white font-bold text-base">
+              <div className="font-bold text-base" style={{ color: '#111111' }}>
                 {results.corridor_summary.intersections_analyzed}
               </div>
             </div>
@@ -296,7 +281,10 @@ export default function SimulationView() {
 
       {/* Error */}
       {simulationError && (
-        <div className="border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/30 px-3 py-2 mb-3 text-xs" style={{ borderRadius: 3 }}>
+        <div
+          className="px-3 py-2 mb-3 text-xs"
+          style={{ border: '1px solid #FECACA', backgroundColor: '#FEF2F2', color: '#DC2626', borderRadius: 3 }}
+        >
           Simulation error: {simulationError}
         </div>
       )}
@@ -304,23 +292,26 @@ export default function SimulationView() {
       {/* Run button */}
       <div className="card text-center py-8">
         {intersections.length === 0 ? (
-          <p className="text-gray-500 dark:text-gray-500 text-xs mb-3">
+          <p className="text-xs mb-3" style={{ color: '#888888' }}>
             Add intersections in Corridor Setup before running the simulation.
           </p>
         ) : (
           <>
-            <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 flex items-center justify-center mx-auto mb-4" style={{ borderRadius: 4 }}>
-              <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div
+              className="w-12 h-12 flex items-center justify-center mx-auto mb-4"
+              style={{ backgroundColor: '#F8F8F7', border: '1px solid #E2E2E0', borderRadius: 4 }}
+            >
+              <svg className="w-6 h-6" style={{ color: '#111111' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                   d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                   d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
+            <h3 className="text-sm font-semibold mb-1" style={{ color: '#111111' }}>
               {results ? 'Re-run Simulation' : 'Run Simulation'}
             </h3>
-            <p className="text-gray-500 dark:text-gray-400 text-xs max-w-sm mx-auto mb-4">
+            <p className="text-xs max-w-sm mx-auto mb-4" style={{ color: '#888888' }}>
               Calculates HCM 7th Edition control delay (d1+d2+d3), 95th percentile queue lengths,
               throughput, and LOS for all intersections.
             </p>
@@ -333,8 +324,7 @@ export default function SimulationView() {
                 <>
                   <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
                   Running…
                 </>
@@ -352,7 +342,7 @@ export default function SimulationView() {
         )}
       </div>
 
-      <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+      <div className="flex items-center justify-between mt-4 pt-3" style={{ borderTop: '1px solid #E2E2E0' }}>
         <button onClick={() => setActiveView('demand')} className="btn-secondary gap-2">
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />

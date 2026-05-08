@@ -39,7 +39,7 @@ export default function DemandInput() {
   if (intersections.length === 0) {
     return (
       <div className="max-w-4xl mx-auto p-4 text-center">
-        <p className="text-gray-500 dark:text-gray-400 text-sm mb-3">No intersections defined. Go back to Corridor Setup first.</p>
+        <p className="text-sm mb-3" style={{ color: '#888888' }}>No intersections defined. Go back to Corridor Setup first.</p>
         <button className="btn-secondary" onClick={() => setActiveView('corridor')}>
           Back to Corridor Setup
         </button>
@@ -94,8 +94,8 @@ export default function DemandInput() {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-base font-semibold text-gray-900 dark:text-white">Demand Input</h2>
-          <p className="text-gray-500 dark:text-gray-400 text-xs mt-0.5">
+          <h2 className="text-base font-semibold" style={{ color: '#111111' }}>Demand Input</h2>
+          <p className="text-xs mt-0.5" style={{ color: '#888888' }}>
             Turning movement counts (TMC) per 15-min bin — veh/15-min
           </p>
         </div>
@@ -122,12 +122,25 @@ export default function DemandInput() {
             <button
               key={i.id}
               onClick={() => setSelectedIxId(i.id)}
-              className={`text-[11px] px-2.5 py-0.5 border transition-colors duration-150 ${
-                selectedIxId === i.id
-                  ? 'bg-blue-600 border-blue-500 text-white'
-                  : 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:border-gray-300 dark:hover:border-gray-500'
-              }`}
-              style={{ borderRadius: 3 }}
+              className="text-[11px] px-2.5 py-0.5 transition-colors duration-150"
+              style={{
+                borderRadius: 3,
+                border: selectedIxId === i.id ? '1px solid #111111' : '1px solid #E2E2E0',
+                backgroundColor: selectedIxId === i.id ? '#111111' : '#F8F8F7',
+                color: selectedIxId === i.id ? '#FFFFFF' : '#888888',
+              }}
+              onMouseEnter={(e) => {
+                if (selectedIxId !== i.id) {
+                  e.currentTarget.style.borderColor = '#111111'
+                  e.currentTarget.style.color = '#111111'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (selectedIxId !== i.id) {
+                  e.currentTarget.style.borderColor = '#E2E2E0'
+                  e.currentTarget.style.color = '#888888'
+                }
+              }}
             >
               {i.name || `Intersection ${i.id}`}
             </button>
@@ -136,7 +149,10 @@ export default function DemandInput() {
       )}
 
       {/* Demand hint */}
-      <div className="border border-blue-200 dark:border-blue-800/50 bg-blue-50 dark:bg-blue-900/10 px-3 py-1.5 text-[11px] text-blue-700 dark:text-blue-300 mb-3" style={{ borderRadius: 3 }}>
+      <div
+        className="px-3 py-1.5 text-[11px] mb-3"
+        style={{ border: '1px solid #E2E2E0', backgroundColor: '#F8F8F7', color: '#888888', borderRadius: 3 }}
+      >
         Each row = approach direction. Columns show L/T/R movements for each 15-min bin. PHF-adjusted vph in last column.
       </div>
 
@@ -150,36 +166,54 @@ export default function DemandInput() {
           <div key={dir} className="card mb-3">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-7 h-7 bg-blue-100 dark:bg-blue-900 border border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-200 font-bold text-xs" style={{ borderRadius: 3 }}>
+                <span
+                  className="inline-flex items-center justify-center w-7 h-7 font-bold text-xs"
+                  style={{ backgroundColor: '#F8F8F7', border: '1px solid #E2E2E0', color: '#111111', borderRadius: 3 }}
+                >
                   {dir}
                 </span>
                 <div>
-                  <h4 className="text-xs font-semibold text-gray-800 dark:text-gray-200">{dir} Approach</h4>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-500">
+                  <h4 className="text-xs font-semibold" style={{ color: '#111111' }}>{dir} Approach</h4>
+                  <p className="text-[11px]" style={{ color: '#888888' }}>
                     {lanes.length} lane{lanes.length !== 1 ? 's' : ''} · HV {approach?.heavy_vehicle_pct ?? 2}% · PHF {approach?.phf ?? 0.95}
                   </p>
                 </div>
               </div>
               <button
+                className="text-[11px] transition-colors"
+                style={{ color: '#AAAAAA', background: 'none', border: 'none' }}
                 onClick={() => handleClear(dir)}
-                className="text-[11px] text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                onMouseEnter={(e) => e.currentTarget.style.color = '#111111'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#AAAAAA'}
               >
                 Clear
               </button>
             </div>
 
             <div className="overflow-x-auto">
-              <table className="text-xs border-separate" style={{ borderSpacing: 0 }}>
+              <table
+                className="text-xs"
+                style={{ tableLayout: 'fixed', borderCollapse: 'collapse', width: '100%', minWidth: 520 }}
+              >
+                <colgroup>
+                  <col style={{ width: 44 }} />
+                  <col style={{ width: 80 }} />
+                  <col style={{ width: 80 }} />
+                  <col style={{ width: 80 }} />
+                  <col style={{ width: 80 }} />
+                  <col style={{ width: 72 }} />
+                  <col style={{ width: 80 }} />
+                </colgroup>
                 <thead>
                   <tr>
-                    <th className="px-2 py-1 text-left label w-8">Mvmt</th>
+                    <th className="px-2 py-1 text-left label">Mvmt</th>
                     {TIME_BINS.map((bin) => (
-                      <th key={bin} className="px-1.5 py-1 text-center label w-20">
+                      <th key={bin} className="px-1.5 py-1 text-center label">
                         {bin} min
                       </th>
                     ))}
-                    <th className="px-2 py-1 text-right label w-16">Total</th>
-                    <th className="px-2 py-1 text-right label w-20">PHF-Adj</th>
+                    <th className="px-2 py-1 text-right label">Total</th>
+                    <th className="px-2 py-1 text-right label">PHF-Adj</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -191,14 +225,18 @@ export default function DemandInput() {
                     return (
                       <tr
                         key={movement}
-                        className={`border-t border-gray-100 dark:border-gray-700 ${!active ? 'opacity-30' : ''}`}
+                        className={!active ? 'opacity-30' : ''}
+                        style={{ borderTop: '1px solid #E2E2E0' }}
                       >
                         <td className="px-2 py-1">
-                          <span className={`inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold ${
-                            active
-                              ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
-                              : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-600'
-                          }`} style={{ borderRadius: 2 }}>
+                          <span
+                            className="inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold"
+                            style={{
+                              borderRadius: 2,
+                              backgroundColor: active ? '#E2E2E0' : '#F5F5F4',
+                              color: active ? '#333333' : '#AAAAAA',
+                            }}
+                          >
                             {movement}
                           </span>
                         </td>
@@ -206,7 +244,7 @@ export default function DemandInput() {
                           <td key={binIdx} className="px-1 py-1">
                             <input
                               type="number"
-                              className={`input-field text-[11px] text-center w-16 ${
+                              className={`input-field text-[11px] text-center w-full ${
                                 !active ? 'cursor-not-allowed' : ''
                               }`}
                               value={getCell(dir, movement, binIdx)}
@@ -219,12 +257,18 @@ export default function DemandInput() {
                           </td>
                         ))}
                         <td className="px-2 py-1 text-right">
-                          <span className={`text-xs font-medium ${total > 0 ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-600'}`}>
+                          <span
+                            className="text-xs font-medium"
+                            style={{ color: total > 0 ? '#111111' : '#AAAAAA' }}
+                          >
                             {total}
                           </span>
                         </td>
                         <td className="px-2 py-1 text-right">
-                          <span className={`text-[11px] ${phfAdj > 0 ? 'text-blue-600 dark:text-blue-300' : 'text-gray-400 dark:text-gray-600'}`}>
+                          <span
+                            className="text-[11px]"
+                            style={{ color: phfAdj > 0 ? '#444444' : '#AAAAAA' }}
+                          >
                             {phfAdj > 0 ? phfAdj : '—'}
                           </span>
                         </td>
@@ -233,8 +277,8 @@ export default function DemandInput() {
                   })}
 
                   {/* Approach totals row */}
-                  <tr className="border-t-2 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900/50">
-                    <td className="px-2 py-1 text-[11px] text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wider">Total</td>
+                  <tr style={{ borderTop: '2px solid #E2E2E0', backgroundColor: '#FAFAF9' }}>
+                    <td className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#888888' }}>Total</td>
                     {TIME_BINS.map((_, binIdx) => {
                       const binTotal = MOVEMENTS.reduce(
                         (sum, mv) => sum + getCell(dir, mv, binIdx),
@@ -242,14 +286,17 @@ export default function DemandInput() {
                       )
                       return (
                         <td key={binIdx} className="px-1 py-1 text-center">
-                          <span className={`text-[11px] font-medium ${binTotal > 0 ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-600'}`}>
+                          <span
+                            className="text-[11px] font-medium"
+                            style={{ color: binTotal > 0 ? '#444444' : '#AAAAAA' }}
+                          >
                             {binTotal}
                           </span>
                         </td>
                       )
                     })}
                     <td className="px-2 py-1 text-right">
-                      <span className="text-xs font-bold text-gray-900 dark:text-white">
+                      <span className="text-xs font-bold" style={{ color: '#111111' }}>
                         {MOVEMENTS.reduce((sum, mv) => sum + dirTotal(dir, mv), 0)}
                       </span>
                     </td>
@@ -263,7 +310,7 @@ export default function DemandInput() {
       })}
 
       {/* Navigation */}
-      <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+      <div className="flex items-center justify-between mt-4 pt-3" style={{ borderTop: '1px solid #E2E2E0' }}>
         <button
           onClick={() => setActiveView('corridor')}
           className="btn-secondary gap-2"

@@ -4,8 +4,10 @@
 
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-white;
+    background-color: #F8F8F7;
+    color: #111111;
     font-size: 13px;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 
   input[type="number"]::-webkit-inner-spin-button,
@@ -20,74 +22,130 @@
 
 @layer components {
   .card {
-    @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700;
+    background-color: #FFFFFF;
+    border: 1px solid #E2E2E0;
     padding: 14px;
     border-radius: 4px;
   }
 
   .btn-primary {
-    @apply inline-flex items-center bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-medium px-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
-    height: 28px;
+    @apply inline-flex items-center font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed;
+    background-color: #111111;
+    color: #FFFFFF;
+    height: 32px;
     font-size: 12px;
     border-radius: 3px;
+    padding: 0 12px;
     white-space: nowrap;
+    border: none;
+  }
+  .btn-primary:hover:not(:disabled) {
+    background-color: #333333;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-3 transition-colors dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200;
-    height: 28px;
+    @apply inline-flex items-center font-medium transition-colors;
+    background-color: #FFFFFF;
+    color: #111111;
+    border: 1px solid #111111;
+    height: 32px;
     font-size: 12px;
     border-radius: 3px;
+    padding: 0 12px;
     white-space: nowrap;
+  }
+  .btn-secondary:hover {
+    background-color: #F8F8F7;
   }
 
   .btn-danger {
-    @apply inline-flex items-center bg-red-700 hover:bg-red-600 text-white font-medium px-3 transition-colors;
-    height: 28px;
+    @apply inline-flex items-center font-medium transition-colors;
+    background-color: #DC2626;
+    color: #FFFFFF;
+    border: none;
+    height: 32px;
     font-size: 12px;
     border-radius: 3px;
+    padding: 0 12px;
     white-space: nowrap;
+  }
+  .btn-danger:hover {
+    background-color: #B91C1C;
   }
 
   .btn-ghost {
-    @apply inline-flex items-center text-gray-600 hover:text-gray-900 hover:bg-gray-100 font-medium px-3 transition-colors dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700;
-    height: 28px;
+    @apply inline-flex items-center font-medium transition-colors;
+    color: #888888;
+    background-color: transparent;
+    border: none;
+    height: 32px;
     font-size: 12px;
     border-radius: 3px;
+    padding: 0 12px;
     white-space: nowrap;
+  }
+  .btn-ghost:hover {
+    color: #111111;
+    background-color: #F0F0EE;
   }
 
   .input-field {
-    @apply block w-full px-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder-gray-400 dark:placeholder-gray-500;
-    height: 28px;
+    @apply block w-full;
+    background-color: #FFFFFF;
+    border: 1px solid #E2E2E0;
+    color: #111111;
+    height: 32px;
     font-size: 13px;
     border-radius: 3px;
-    line-height: 26px;
+    padding: 0 8px;
+    line-height: 30px;
+    outline: none;
+    box-shadow: none;
+  }
+  .input-field:focus {
+    border-color: #111111;
+  }
+  .input-field::placeholder {
+    color: #BBBBBB;
+  }
+  .input-field:disabled {
+    background-color: #F8F8F7;
+    color: #AAAAAA;
+    cursor: not-allowed;
   }
 
   .select-field {
-    @apply block w-full px-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500;
-    height: 28px;
+    @apply block w-full;
+    background-color: #FFFFFF;
+    border: 1px solid #E2E2E0;
+    color: #111111;
+    height: 32px;
     font-size: 13px;
     border-radius: 3px;
+    padding: 0 8px;
+    outline: none;
   }
-
-  .tab-active {
-    @apply bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white border-b-2 border-blue-500;
-  }
-
-  .tab-inactive {
-    @apply text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700;
+  .select-field:focus {
+    border-color: #111111;
   }
 
   .label {
-    @apply font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400;
+    display: block;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #888888;
     font-size: 11px;
   }
 
   .section-header {
-    @apply font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2;
+    display: block;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #888888;
     font-size: 11px;
+    margin-bottom: 8px;
   }
 }
 
@@ -100,31 +158,39 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #9ca3af;
+  background: #CCCCCC;
   border-radius: 2px;
 }
-.dark ::-webkit-scrollbar-thumb {
-  background: #4b5563;
-}
 ::-webkit-scrollbar-thumb:hover {
-  background: #6b7280;
+  background: #AAAAAA;
 }
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: #6b7280;
+
+/* Prevent .label's display:block from breaking table headers */
+th.label {
+  display: table-cell;
 }
 
 /* Table styles */
 .data-table {
-  @apply w-full;
+  width: 100%;
   font-size: 12px;
 }
 .data-table th {
-  @apply bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 font-medium px-3 py-1.5 text-left uppercase tracking-wider;
+  background-color: #F8F8F7;
+  color: #888888;
+  font-weight: 500;
+  padding: 6px 12px;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   font-size: 11px;
+  border-bottom: 1px solid #E2E2E0;
 }
 .data-table td {
-  @apply px-3 py-1.5 border-t border-gray-100 dark:border-gray-700 text-gray-800 dark:text-gray-200;
+  padding: 6px 12px;
+  border-top: 1px solid #E2E2E0;
+  color: #333333;
 }
 .data-table tr:hover td {
-  @apply bg-gray-50 dark:bg-gray-700/50;
+  background-color: #FAFAF9;
 }

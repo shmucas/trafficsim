@@ -20,11 +20,15 @@ function getActiveDirections(type) {
 
 function PhaseBadge({ num, active = true }) {
   return (
-    <span className={`inline-flex items-center justify-center w-6 h-6 text-xs font-bold ${
-      active
-        ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-700'
-        : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-600 border border-gray-200 dark:border-gray-700'
-    }`} style={{ borderRadius: 3 }}>
+    <span
+      className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold"
+      style={{
+        borderRadius: 3,
+        backgroundColor: active ? '#111111' : '#F8F8F7',
+        color: active ? '#FFFFFF' : '#AAAAAA',
+        border: active ? '1px solid #111111' : '1px solid #E2E2E0',
+      }}
+    >
       {num}
     </span>
   )
@@ -37,11 +41,15 @@ function GreenBar({ split, yellow, allRed, cycle }) {
   const pctY = (yellow / cycle) * 100
   const pctR = (allRed / cycle) * 100
   return (
-    <div className="flex h-2 overflow-hidden w-full min-w-[80px]" style={{ borderRadius: 2 }} title={`Green ${effG}s / Yellow ${yellow}s / All-Red ${allRed}s`}>
-      <div className="bg-green-600" style={{ width: `${pctG}%` }} />
-      <div className="bg-yellow-500" style={{ width: `${pctY}%` }} />
-      <div className="bg-red-700"   style={{ width: `${pctR}%` }} />
-      <div className="bg-gray-200 dark:bg-gray-800 flex-1" />
+    <div
+      className="flex h-2 overflow-hidden w-full min-w-[80px]"
+      style={{ borderRadius: 2 }}
+      title={`Green ${effG}s / Yellow ${yellow}s / All-Red ${allRed}s`}
+    >
+      <div style={{ width: `${pctG}%`, backgroundColor: '#16A34A' }} />
+      <div style={{ width: `${pctY}%`, backgroundColor: '#CA8A04' }} />
+      <div style={{ width: `${pctR}%`, backgroundColor: '#DC2626' }} />
+      <div style={{ flex: 1, backgroundColor: '#F0F0EE' }} />
     </div>
   )
 }
@@ -58,8 +66,8 @@ export default function IntersectionEditor() {
     duplicateIntersection,
   } = useProjectStore()
 
-  const [activeTab, setActiveTab]     = useState('Geometry')
-  const [timingPlan, setTimingPlan]   = useState(activePlan || 'AM')
+  const [activeTab, setActiveTab]   = useState('Geometry')
+  const [timingPlan, setTimingPlan] = useState(activePlan || 'AM')
 
   if (!currentProject) return null
 
@@ -69,7 +77,7 @@ export default function IntersectionEditor() {
 
   if (!ix) {
     return (
-      <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+      <div className="p-6 text-center" style={{ color: '#888888' }}>
         <p>No intersection selected. Go back to Corridor Setup.</p>
         <button className="btn-secondary mt-4" onClick={() => setActiveView('corridor')}>
           Back to Corridor
@@ -141,12 +149,7 @@ export default function IntersectionEditor() {
     const src = ix.timing_plans?.[fromPlan]
     if (!src) return
     const timing_plans = { ...(ix.timing_plans || {}) }
-    timing_plans[toPlan] = {
-      ...timing_plans[toPlan],
-      splits: { ...src.splits },
-      cycle: src.cycle,
-      offset: src.offset,
-    }
+    timing_plans[toPlan] = { ...timing_plans[toPlan], splits: { ...src.splits }, cycle: src.cycle, offset: src.offset }
     update({ timing_plans })
   }
 
@@ -167,9 +170,7 @@ export default function IntersectionEditor() {
   }
 
   const activeDirections = getActiveDirections(ix.type)
-  const activePhaseKeys  = PHASES
-    .map(String)
-    .filter((k) => ix.nema_phases?.[k]?.active !== false)
+  const activePhaseKeys  = PHASES.map(String).filter((k) => ix.nema_phases?.[k]?.active !== false)
 
   function splitTotal(plan) {
     const splits = ix.timing_plans?.[plan]?.splits || {}
@@ -185,27 +186,25 @@ export default function IntersectionEditor() {
 
   return (
     <div className="max-w-5xl mx-auto p-4">
-
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 mb-3">
         <button
           onClick={() => setActiveView('corridor')}
-          className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 text-xs flex items-center gap-1 transition-colors"
+          className="text-xs flex items-center gap-1 transition-colors"
+          style={{ color: '#888888', background: 'none', border: 'none' }}
+          onMouseEnter={(e) => e.currentTarget.style.color = '#111111'}
+          onMouseLeave={(e) => e.currentTarget.style.color = '#888888'}
         >
           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
           Corridor
         </button>
-        <span className="text-gray-300 dark:text-gray-600">/</span>
-        <span className="text-gray-900 dark:text-white font-medium text-xs">{ix.name}</span>
+        <span style={{ color: '#E2E2E0' }}>/</span>
+        <span className="text-xs font-medium" style={{ color: '#111111' }}>{ix.name}</span>
 
         <div className="ml-auto flex items-center gap-1.5">
-          <button
-            onClick={handleDuplicate}
-            className="btn-secondary gap-1"
-            title="Duplicate this intersection"
-          >
+          <button onClick={handleDuplicate} className="btn-secondary gap-1" title="Duplicate this intersection">
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </svg>
@@ -215,7 +214,7 @@ export default function IntersectionEditor() {
             onClick={() => ixIndex > 0 && navigateTo(intersections[ixIndex - 1])}
             disabled={ixIndex === 0}
             className="btn-ghost px-2 disabled:opacity-30"
-          >← Prev</button>
+          >&#8592; Prev</button>
           <select
             className="select-field text-xs w-44"
             value={ix.id}
@@ -232,21 +231,26 @@ export default function IntersectionEditor() {
             onClick={() => ixIndex < intersections.length - 1 && navigateTo(intersections[ixIndex + 1])}
             disabled={ixIndex === intersections.length - 1}
             className="btn-ghost px-2 disabled:opacity-30"
-          >Next →</button>
+          >Next &#8594;</button>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-200 dark:border-gray-700 mb-3 overflow-x-auto">
+      <div className="flex mb-3 overflow-x-auto" style={{ borderBottom: '1px solid #E2E2E0' }}>
         {TABS.map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 transition-colors ${
-              activeTab === tab
-                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600'
-            }`}
+            className="px-3 py-2 text-xs font-medium whitespace-nowrap transition-colors"
+            style={{
+              borderBottom: activeTab === tab ? '2px solid #111111' : '2px solid transparent',
+              color: activeTab === tab ? '#111111' : '#888888',
+              background: 'none',
+              border: 'none',
+              borderBottom: activeTab === tab ? '2px solid #111111' : '2px solid transparent',
+            }}
+            onMouseEnter={(e) => { if (activeTab !== tab) e.currentTarget.style.color = '#333333' }}
+            onMouseLeave={(e) => { if (activeTab !== tab) e.currentTarget.style.color = '#888888' }}
           >{tab}</button>
         ))}
       </div>
@@ -259,11 +263,7 @@ export default function IntersectionEditor() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="label block mb-1">Intersection Name</label>
-                <input
-                  type="text" className="input-field"
-                  value={ix.name}
-                  onChange={(e) => update({ name: e.target.value })}
-                />
+                <input type="text" className="input-field" value={ix.name} onChange={(e) => update({ name: e.target.value })} />
               </div>
               <div>
                 <label className="label block mb-1">Intersection Type</label>
@@ -325,8 +325,8 @@ export default function IntersectionEditor() {
                     </thead>
                     <tbody>
                       {(approach.lanes || []).map((lane, li) => (
-                        <tr key={li} className="border-t border-gray-100 dark:border-gray-700">
-                          <td className="px-2 py-1 text-gray-400 dark:text-gray-500">{li + 1}</td>
+                        <tr key={li} style={{ borderTop: '1px solid #F0F0EE' }}>
+                          <td className="px-2 py-1" style={{ color: '#AAAAAA' }}>{li + 1}</td>
                           <td className="px-2 py-1">
                             <select
                               className="select-field text-xs w-20"
@@ -348,7 +348,10 @@ export default function IntersectionEditor() {
                             <button
                               onClick={() => removeLane(dir, li)}
                               disabled={(approach.lanes || []).length <= 1}
-                              className="text-gray-400 dark:text-gray-600 hover:text-red-500 transition-colors disabled:opacity-30"
+                              className="transition-colors disabled:opacity-30"
+                              style={{ color: '#CCCCCC', background: 'none', border: 'none' }}
+                              onMouseEnter={(e) => e.currentTarget.style.color = '#EF4444'}
+                              onMouseLeave={(e) => e.currentTarget.style.color = '#CCCCCC'}
                             >
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -361,7 +364,10 @@ export default function IntersectionEditor() {
                   </table>
                   <button
                     onClick={() => addLane(dir)}
-                    className="mt-1.5 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-500 flex items-center gap-1 transition-colors px-2"
+                    className="mt-1.5 text-xs flex items-center gap-1 transition-colors px-2"
+                    style={{ color: '#888888', background: 'none', border: 'none' }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = '#111111'}
+                    onMouseLeave={(e) => e.currentTarget.style.color = '#888888'}
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -370,11 +376,11 @@ export default function IntersectionEditor() {
                   </button>
                 </div>
 
-                <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700/50 flex items-center gap-4">
+                <div className="mt-2 pt-2 flex items-center gap-4" style={{ borderTop: '1px solid #F0F0EE' }}>
                   <span className="label">Turn Bay Lengths</span>
                   {['L', 'R'].map((mv) => (
                     <div key={mv} className="flex items-center gap-1.5">
-                      <span className="text-xs text-gray-500 dark:text-gray-400">{mv}:</span>
+                      <span className="text-xs" style={{ color: '#888888' }}>{mv}:</span>
                       <input
                         type="number"
                         className="input-field text-xs w-16"
@@ -384,7 +390,7 @@ export default function IntersectionEditor() {
                         })}
                         placeholder="—" min={0}
                       />
-                      <span className="text-xs text-gray-400 dark:text-gray-500">ft</span>
+                      <span className="text-xs" style={{ color: '#AAAAAA' }}>ft</span>
                     </div>
                   ))}
                 </div>
@@ -402,35 +408,33 @@ export default function IntersectionEditor() {
       {/* ── Tab: Timing ───────────────────────────────────────────────────── */}
       {activeTab === 'Timing' && (
         <div className="space-y-3">
-
-          {/* Plan sub-tabs */}
           <div className="flex items-center gap-3">
-            <div className="flex gap-0.5 bg-gray-100 dark:bg-gray-900 p-0.5" style={{ borderRadius: 3 }}>
+            <div
+              className="flex gap-0.5 p-0.5"
+              style={{ backgroundColor: '#F0F0EE', border: '1px solid #E2E2E0', borderRadius: 3 }}
+            >
               {PLANS.map((plan) => (
                 <button
                   key={plan}
                   onClick={() => setTimingPlan(plan)}
-                  className={`px-3 py-1 text-xs font-semibold transition-colors ${
-                    timingPlan === plan ? 'bg-blue-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                  }`}
-                  style={{ borderRadius: 2 }}
+                  className="px-3 py-1 text-xs font-semibold transition-colors"
+                  style={{
+                    borderRadius: 2,
+                    backgroundColor: timingPlan === plan ? '#111111' : 'transparent',
+                    color: timingPlan === plan ? '#FFFFFF' : '#888888',
+                    border: 'none',
+                  }}
                 >{plan}</button>
               ))}
             </div>
-            <div className="ml-auto flex items-center gap-2 text-xs text-gray-500 dark:text-gray-500">
+            <div className="ml-auto flex items-center gap-2 text-xs" style={{ color: '#888888' }}>
               <span>Copy from:</span>
               {PLANS.filter((p) => p !== timingPlan).map((src) => (
-                <button
-                  key={src}
-                  onClick={() => copyPlan(src, timingPlan)}
-                  className="btn-secondary"
-                  title={`Copy from ${src} into ${timingPlan}`}
-                >{src}</button>
+                <button key={src} onClick={() => copyPlan(src, timingPlan)} className="btn-secondary" title={`Copy from ${src} into ${timingPlan}`}>{src}</button>
               ))}
             </div>
           </div>
 
-          {/* Cycle + Offset */}
           <div className="card">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
               <div>
@@ -441,7 +445,7 @@ export default function IntersectionEditor() {
                   onChange={(e) => updateTiming(timingPlan, { cycle: Number(e.target.value) })}
                   min={30} max={300} step={5}
                 />
-                <p className="text-[11px] text-gray-400 dark:text-gray-600 mt-0.5">Range: 60–200 s</p>
+                <p className="text-[11px] mt-0.5" style={{ color: '#AAAAAA' }}>Range: 60–200 s</p>
               </div>
               <div>
                 <label className="label block mb-1">Offset (s)</label>
@@ -451,11 +455,10 @@ export default function IntersectionEditor() {
                   onChange={(e) => updateTiming(timingPlan, { offset: Number(e.target.value) })}
                   min={0} max={300} step={1}
                 />
-                <p className="text-[11px] text-gray-400 dark:text-gray-600 mt-0.5">0 to cycle length</p>
+                <p className="text-[11px] mt-0.5" style={{ color: '#AAAAAA' }}>0 to cycle length</p>
               </div>
             </div>
 
-            {/* Splits table */}
             <h4 className="label mb-2">Phase Splits</h4>
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
@@ -484,10 +487,8 @@ export default function IntersectionEditor() {
                     const minViol  = split > 0 && effG < minG
                     const maxViol  = split > 0 && effG > maxG
                     return (
-                      <tr key={key} className="border-t border-gray-100 dark:border-gray-700">
-                        <td className="px-2 py-1.5">
-                          <PhaseBadge num={key} />
-                        </td>
+                      <tr key={key} style={{ borderTop: '1px solid #E2E2E0' }}>
+                        <td className="px-2 py-1.5"><PhaseBadge num={key} /></td>
                         <td className="px-2 py-1.5 text-center">
                           <input
                             type="number"
@@ -515,14 +516,15 @@ export default function IntersectionEditor() {
                             min={1} max={200} step={1}
                           />
                         </td>
-                        <td className={`px-2 py-1.5 text-center text-xs font-mono ${
-                          minViol ? 'text-orange-500' : maxViol ? 'text-amber-500' : 'text-gray-700 dark:text-gray-300'
-                        }`}>
+                        <td
+                          className="px-2 py-1.5 text-center text-xs font-mono"
+                          style={{ color: minViol ? '#EF4444' : maxViol ? '#D97706' : '#111111' }}
+                        >
                           {effG}s
-                          {minViol && <span className="ml-0.5 text-orange-500" title="Below min green">↓</span>}
-                          {maxViol && <span className="ml-0.5 text-amber-500" title="Exceeds max green">↑</span>}
+                          {minViol && <span className="ml-0.5" title="Below min green">&#8595;</span>}
+                          {maxViol && <span className="ml-0.5" title="Exceeds max green">&#8593;</span>}
                         </td>
-                        <td className="px-2 py-1.5 text-center text-gray-500 dark:text-gray-400 text-xs">{pct}%</td>
+                        <td className="px-2 py-1.5 text-center text-xs" style={{ color: '#888888' }}>{pct}%</td>
                         <td className="px-2 py-1.5">
                           <GreenBar split={split} yellow={yellow} allRed={allRed} cycle={cycle} />
                         </td>
@@ -533,40 +535,45 @@ export default function IntersectionEditor() {
               </table>
             </div>
 
-            {/* Running total */}
             {(() => {
               const total = splitTotal(timingPlan)
               const cycle = ix.timing_plans?.[timingPlan]?.cycle || 120
               const diff  = total - cycle
               const valid = Math.abs(diff) < 1
               return (
-                <div className={`mt-3 flex items-center gap-2 px-3 py-2 text-xs ${
-                  valid
-                    ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800/50'
-                    : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800/50'
-                }`} style={{ borderRadius: 3 }}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${valid ? 'bg-green-500' : 'bg-red-500'}`} />
+                <div
+                  className="mt-3 flex items-center gap-2 px-3 py-2 text-xs"
+                  style={{
+                    borderRadius: 3,
+                    backgroundColor: valid ? '#F0FDF4' : '#FEF2F2',
+                    color: valid ? '#166534' : '#DC2626',
+                    border: valid ? '1px solid #BBF7D0' : '1px solid #FECACA',
+                  }}
+                >
+                  <span
+                    className="w-1.5 h-1.5 rounded-full"
+                    style={{ backgroundColor: valid ? '#16A34A' : '#DC2626' }}
+                  />
                   Splits total: <strong>{total}s</strong> / {cycle}s cycle
                   {!valid && (
                     <span className="ml-1 font-medium">
                       ({diff > 0 ? '+' : ''}{diff}s {diff > 0 ? 'over' : 'short'})
                     </span>
                   )}
-                  {valid && <span className="ml-1 font-medium">✓ Valid</span>}
+                  {valid && <span className="ml-1 font-medium">Valid</span>}
                 </div>
               )
             })()}
 
-            {/* Green time legend */}
-            <div className="mt-2 flex items-center gap-4 text-[11px] text-gray-500 dark:text-gray-500">
+            <div className="mt-2 flex items-center gap-4 text-[11px]" style={{ color: '#888888' }}>
               <div className="flex items-center gap-1">
-                <div className="w-4 h-2 bg-green-600" style={{ borderRadius: 2 }} /> Eff. green
+                <div className="w-4 h-2" style={{ backgroundColor: '#16A34A', borderRadius: 2 }} /> Eff. green
               </div>
               <div className="flex items-center gap-1">
-                <div className="w-4 h-2 bg-yellow-500" style={{ borderRadius: 2 }} /> Yellow
+                <div className="w-4 h-2" style={{ backgroundColor: '#CA8A04', borderRadius: 2 }} /> Yellow
               </div>
               <div className="flex items-center gap-1">
-                <div className="w-4 h-2 bg-red-700" style={{ borderRadius: 2 }} /> All-red
+                <div className="w-4 h-2" style={{ backgroundColor: '#DC2626', borderRadius: 2 }} /> All-red
               </div>
             </div>
           </div>
@@ -577,7 +584,7 @@ export default function IntersectionEditor() {
       {activeTab === 'Detectors' && (
         <div className="card">
           <h3 className="section-header">Detector Configuration</h3>
-          <p className="text-[11px] text-gray-500 dark:text-gray-500 mb-3">
+          <p className="text-[11px] mb-3" style={{ color: '#888888' }}>
             Stop bar and advance detectors per approach.
           </p>
           <div className="overflow-x-auto">
@@ -600,10 +607,10 @@ export default function IntersectionEditor() {
                       return apPhases.includes(d.phase)
                     })
                   return (
-                    <tr key={dir} className="border-t border-gray-100 dark:border-gray-700">
+                    <tr key={dir} style={{ borderTop: '1px solid #E2E2E0' }}>
                       <td className="px-3 py-2">
-                        <span className="font-medium text-gray-800 dark:text-gray-200">{dir}</span>
-                        <span className="text-gray-400 dark:text-gray-500 ml-2 text-[11px]">
+                        <span className="font-medium" style={{ color: '#111111' }}>{dir}</span>
+                        <span className="ml-2 text-[11px]" style={{ color: '#AAAAAA' }}>
                           ({(approach.lanes || []).length} lane{(approach.lanes || []).length !== 1 ? 's' : ''})
                         </span>
                       </td>
@@ -612,7 +619,7 @@ export default function IntersectionEditor() {
                           type="checkbox"
                           checked={det.stop_bar !== false}
                           onChange={(e) => updateDetector(dir, 'stop_bar', e.target.checked)}
-                          className="w-3.5 h-3.5 accent-blue-500"
+                          className="w-3.5 h-3.5 accent-black"
                         />
                       </td>
                       <td className="px-3 py-2 text-center">
@@ -620,13 +627,13 @@ export default function IntersectionEditor() {
                           type="checkbox"
                           checked={!!det.advance}
                           onChange={(e) => updateDetector(dir, 'advance', e.target.checked)}
-                          className="w-3.5 h-3.5 accent-blue-500"
+                          className="w-3.5 h-3.5 accent-black"
                         />
                       </td>
-                      <td className="px-3 py-2 text-[11px] text-gray-500 dark:text-gray-500">
+                      <td className="px-3 py-2 text-[11px]" style={{ color: '#888888' }}>
                         {ntcipChans.length > 0
                           ? ntcipChans.map((d) => `${d.channel} (${d.type === 'advance' ? 'Adv' : 'SB'})`).join(', ')
-                          : <span className="italic text-gray-400 dark:text-gray-600">—</span>}
+                          : <span className="italic" style={{ color: '#CCCCCC' }}>—</span>}
                       </td>
                     </tr>
                   )
@@ -643,7 +650,7 @@ export default function IntersectionEditor() {
       )}
 
       {/* Bottom navigation */}
-      <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+      <div className="flex items-center justify-between mt-4 pt-3" style={{ borderTop: '1px solid #E2E2E0' }}>
         <button onClick={() => setActiveView('corridor')} className="btn-secondary gap-2">
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -726,15 +733,14 @@ function NTCIPImportTab({ intersection, onApply }) {
       <div className="card">
         <div className="flex items-center justify-between mb-2">
           <h3 className="section-header mb-0">NTCIP Controller Database Import</h3>
-          <a href="/api/ntcip/sample-csv" download="ntcip_sample.csv"
-            className="btn-secondary gap-1">
+          <a href="/api/ntcip/sample-csv" download="ntcip_sample.csv" className="btn-secondary gap-1">
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
             Sample CSV
           </a>
         </div>
-        <p className="text-gray-500 dark:text-gray-400 text-[11px] mb-3">
+        <p className="text-[11px] mb-3" style={{ color: '#888888' }}>
           Supports Econolite ASC/3, Intelight, and Generic NTCIP CSV exports.
         </p>
 
@@ -743,35 +749,35 @@ function NTCIPImportTab({ intersection, onApply }) {
           onDragLeave={() => setIsDragging(false)}
           onDrop={handleDrop}
           onClick={() => fileRef.current?.click()}
-          className={`border-2 border-dashed p-6 text-center cursor-pointer transition-colors ${
-            isDragging
-              ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20'
-              : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
-          }`}
-          style={{ borderRadius: 4 }}
+          className="p-6 text-center cursor-pointer transition-colors"
+          style={{
+            border: isDragging ? '2px dashed #111111' : '2px dashed #E2E2E0',
+            backgroundColor: isDragging ? '#F8F8F7' : '#FFFFFF',
+            borderRadius: 4,
+          }}
         >
           <input ref={fileRef} type="file" accept=".csv,.txt,.json" className="hidden" onChange={handleFileInput} />
           {isUploading ? (
             <div className="flex flex-col items-center gap-2">
-              <svg className="w-6 h-6 text-blue-500 animate-spin" fill="none" viewBox="0 0 24 24">
+              <svg className="w-6 h-6 animate-spin" style={{ color: '#111111' }} fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
-              <span className="text-gray-500 dark:text-gray-400 text-xs">Parsing file…</span>
+              <span className="text-xs" style={{ color: '#888888' }}>Parsing file…</span>
             </div>
           ) : (
             <>
-              <svg className="w-8 h-8 text-gray-400 dark:text-gray-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-8 h-8 mx-auto mb-2" style={{ color: '#CCCCCC' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
               </svg>
-              <p className="text-gray-700 dark:text-gray-300 font-medium text-xs mb-0.5">Drop file here or click to browse</p>
-              <p className="text-gray-400 dark:text-gray-500 text-[11px]">.csv · .txt · .json</p>
+              <p className="font-medium text-xs mb-0.5" style={{ color: '#333333' }}>Drop file here or click to browse</p>
+              <p className="text-[11px]" style={{ color: '#AAAAAA' }}>.csv · .txt · .json</p>
             </>
           )}
         </div>
 
         {uploadError && (
-          <div className="mt-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300 px-3 py-1.5 text-xs" style={{ borderRadius: 3 }}>
+          <div className="mt-2 px-3 py-1.5 text-xs" style={{ backgroundColor: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', borderRadius: 3 }}>
             {uploadError}
           </div>
         )}
@@ -781,28 +787,31 @@ function NTCIPImportTab({ intersection, onApply }) {
         <div className="card">
           <div className="flex items-center gap-2 mb-2">
             <h3 className="section-header mb-0">Import Log</h3>
-            <span className="text-[11px] bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5" style={{ borderRadius: 3 }}>{result.format}</span>
+            <span className="text-[11px] px-1.5 py-0.5" style={{ backgroundColor: '#F8F8F7', color: '#888888', border: '1px solid #E2E2E0', borderRadius: 3 }}>{result.format}</span>
             {logCounts.warn > 0 && (
-              <span className="text-[11px] bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800/50 px-1.5 py-0.5" style={{ borderRadius: 3 }}>
+              <span className="text-[11px] px-1.5 py-0.5" style={{ backgroundColor: '#FFFBEB', color: '#92400E', border: '1px solid #FCD34D', borderRadius: 3 }}>
                 {logCounts.warn}w
               </span>
             )}
             {logCounts.error > 0 && (
-              <span className="text-[11px] bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/50 px-1.5 py-0.5" style={{ borderRadius: 3 }}>
+              <span className="text-[11px] px-1.5 py-0.5" style={{ backgroundColor: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA', borderRadius: 3 }}>
                 {logCounts.error}e
               </span>
             )}
           </div>
           <div className="space-y-0.5 max-h-40 overflow-y-auto text-[11px] font-mono">
             {result.log.map((entry, i) => (
-              <div key={i} className={`flex gap-2 px-2 py-0.5 ${
-                entry.level === 'error' ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300' :
-                entry.level === 'warn'  ? 'bg-yellow-50 dark:bg-yellow-900/10 text-yellow-700 dark:text-yellow-400' : 'text-gray-600 dark:text-gray-400'
-              }`} style={{ borderRadius: 2 }}>
-                <span className={`shrink-0 ${
-                  entry.level === 'error' ? 'text-red-500' : entry.level === 'warn' ? 'text-yellow-500' : 'text-blue-500'
-                }`}>
-                  {entry.level === 'error' ? '✗' : entry.level === 'warn' ? '⚠' : '✓'}
+              <div
+                key={i}
+                className="flex gap-2 px-2 py-0.5"
+                style={{
+                  borderRadius: 2,
+                  backgroundColor: entry.level === 'error' ? '#FEF2F2' : entry.level === 'warn' ? '#FFFBEB' : 'transparent',
+                  color: entry.level === 'error' ? '#DC2626' : entry.level === 'warn' ? '#92400E' : '#444444',
+                }}
+              >
+                <span style={{ color: entry.level === 'error' ? '#EF4444' : entry.level === 'warn' ? '#D97706' : '#22C55E' }}>
+                  {entry.level === 'error' ? 'x' : entry.level === 'warn' ? '!' : '+'}
                 </span>
                 <span>{entry.message}</span>
               </div>
@@ -813,7 +822,7 @@ function NTCIPImportTab({ intersection, onApply }) {
 
       {result && hasData && (
         <div className="card">
-          <h3 className="section-header">Review & Apply</h3>
+          <h3 className="section-header">Review &amp; Apply</h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
             {[
               { key: 'phases',    label: 'Phase Parameters', count: Object.keys(result.mapped.nema_phases || {}).length },
@@ -821,27 +830,35 @@ function NTCIPImportTab({ intersection, onApply }) {
               { key: 'overlaps',  label: 'Overlaps',         count: (result.mapped.overlaps || []).length },
               { key: 'detectors', label: 'Detectors',        count: (result.mapped.detectors || []).length },
             ].map(({ key, label, count }) => (
-              <label key={key} className={`flex items-center gap-2 px-2.5 py-2 border cursor-pointer transition-colors text-xs ${
-                applyScope[key]
-                  ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-200'
-                  : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-500'
-              }`} style={{ borderRadius: 3 }}>
+              <label
+                key={key}
+                className="flex items-center gap-2 px-2.5 py-2 cursor-pointer transition-colors text-xs"
+                style={{
+                  borderRadius: 3,
+                  backgroundColor: applyScope[key] ? '#F8F8F7' : '#FFFFFF',
+                  border: applyScope[key] ? '1px solid #111111' : '1px solid #E2E2E0',
+                  color: applyScope[key] ? '#111111' : '#888888',
+                }}
+              >
                 <input
                   type="checkbox"
                   checked={applyScope[key]}
                   onChange={(e) => setApplyScope((s) => ({ ...s, [key]: e.target.checked }))}
-                  className="accent-blue-500"
+                  className="accent-black"
                 />
                 <span>
                   <div className="font-medium">{label}</div>
-                  <div className="text-gray-400 dark:text-gray-500">{count} found</div>
+                  <div style={{ color: '#AAAAAA' }}>{count} found</div>
                 </span>
               </label>
             ))}
           </div>
 
           {applied ? (
-            <div className="flex items-center gap-2 text-green-700 dark:text-green-400 text-xs bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/50 px-3 py-2" style={{ borderRadius: 3 }}>
+            <div
+              className="flex items-center gap-2 text-xs px-3 py-2"
+              style={{ backgroundColor: '#F0FDF4', border: '1px solid #BBF7D0', color: '#166534', borderRadius: 3 }}
+            >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
@@ -859,7 +876,7 @@ function NTCIPImportTab({ intersection, onApply }) {
       )}
 
       {result && !hasData && logCounts?.error === 0 && (
-        <div className="card text-center py-4 text-gray-500 dark:text-gray-500 text-xs">
+        <div className="card text-center py-4 text-xs" style={{ color: '#888888' }}>
           No mappable data found. Check the file format or download the sample CSV.
         </div>
       )}

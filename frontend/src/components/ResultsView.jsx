@@ -7,31 +7,35 @@ function downloadPDF(projectId) {
 }
 
 const LOS_COLORS = {
-  A: 'text-green-400', B: 'text-green-400',
-  C: 'text-yellow-400', D: 'text-yellow-500',
-  E: 'text-orange-400', F: 'text-red-400',
+  A: '#16A34A', B: '#16A34A',
+  C: '#CA8A04', D: '#D97706',
+  E: '#EA580C', F: '#DC2626',
 }
 
 const LOS_BG = {
-  A: 'bg-green-900/30 text-green-300',
-  B: 'bg-green-900/20 text-green-400',
-  C: 'bg-yellow-900/30 text-yellow-300',
-  D: 'bg-yellow-900/40 text-yellow-300',
-  E: 'bg-orange-900/30 text-orange-300',
-  F: 'bg-red-900/30 text-red-300',
+  A: { bg: '#DCFCE7', text: '#166534' },
+  B: { bg: '#DCFCE7', text: '#166534' },
+  C: { bg: '#FEF9C3', text: '#854D0E' },
+  D: { bg: '#FEF3C7', text: '#92400E' },
+  E: { bg: '#FFEDD5', text: '#9A3412' },
+  F: { bg: '#FEE2E2', text: '#991B1B' },
 }
 
 function LOSBadge({ los }) {
+  const colors = LOS_BG[los] || { bg: '#F8F8F7', text: '#888888' }
   return (
-    <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${LOS_BG[los] || 'bg-gray-700 text-gray-300'}`}>
+    <span
+      className="inline-block px-1.5 py-0 text-[11px] font-bold"
+      style={{ backgroundColor: colors.bg, color: colors.text, borderRadius: 2 }}
+    >
       {los}
     </span>
   )
 }
 
 function VCBadge({ vc }) {
-  const color = vc >= 1.0 ? 'text-red-400' : vc >= 0.85 ? 'text-orange-400' : 'text-gray-300'
-  return <span className={`font-mono text-xs ${color}`}>{vc.toFixed(3)}</span>
+  const color = vc >= 1.0 ? '#DC2626' : vc >= 0.85 ? '#EA580C' : '#444444'
+  return <span className="font-mono text-[11px]" style={{ color }}>{vc.toFixed(3)}</span>
 }
 
 function exportCSV(rows, filename) {
@@ -55,17 +59,20 @@ export default function ResultsView() {
 
   if (!results || results.status !== 'complete') {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="card text-center py-16">
-          <div className="w-16 h-16 bg-gray-800 border border-gray-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="max-w-4xl mx-auto p-4">
+        <div className="card text-center py-12">
+          <div
+            className="w-12 h-12 flex items-center justify-center mx-auto mb-3"
+            style={{ backgroundColor: '#F8F8F7', border: '1px solid #E2E2E0', borderRadius: 4 }}
+          >
+            <svg className="w-6 h-6" style={{ color: '#AAAAAA' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                 d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
           </div>
-          <h3 className="text-white font-semibold text-lg mb-2">No results yet</h3>
-          <p className="text-gray-400 text-sm mb-6">Run the simulation first to see HCM 7th Edition results.</p>
-          <button onClick={() => setActiveView('simulation')} className="btn-primary">
+          <h3 className="text-sm font-semibold mb-1" style={{ color: '#111111' }}>No results yet</h3>
+          <p className="text-xs mb-4" style={{ color: '#888888' }}>Run the simulation first to see HCM 7th Edition results.</p>
+          <button onClick={() => setActiveView('simulation')} className="btn-primary mx-auto">
             Go to Simulation
           </button>
         </div>
@@ -75,7 +82,6 @@ export default function ResultsView() {
 
   const { corridor_summary, intersections } = results
 
-  // Flatten all movements for tables
   const allRows = []
   for (const ix of intersections) {
     for (const ap of ix.approaches) {
@@ -102,12 +108,12 @@ export default function ResultsView() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
+    <div className="max-w-6xl mx-auto p-4">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-xl font-bold text-white">Results</h2>
-          <p className="text-gray-400 text-sm mt-1">
+          <h2 className="text-base font-semibold" style={{ color: '#111111' }}>Results</h2>
+          <p className="text-xs mt-0.5" style={{ color: '#888888' }}>
             {currentProject.name} — {results.active_plan} plan · HCM 7th Edition
           </p>
         </div>
@@ -115,16 +121,16 @@ export default function ResultsView() {
           <button
             onClick={() => runSimulation()}
             disabled={isSimulating}
-            className="btn-secondary text-xs flex items-center gap-1.5"
+            className="btn-secondary gap-1.5"
           >
             {isSimulating ? 'Running…' : `Re-run ${activePlan}`}
           </button>
           <button
             onClick={() => downloadPDF(currentProject.id)}
-            className="btn-primary text-xs flex items-center gap-1.5"
+            className="btn-primary gap-1.5"
             title="Download PDF report"
           >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
@@ -133,36 +139,48 @@ export default function ResultsView() {
         </div>
       </div>
 
-      {/* Corridor summary cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-        <div className="card text-center">
-          <div className="label mb-1">Corridor Delay</div>
-          <div className="text-2xl font-bold text-white">{corridor_summary.avg_delay_s_veh}</div>
-          <div className="text-xs text-gray-500 mt-0.5">s/veh</div>
+      {/* Corridor stat bar */}
+      <div
+        className="flex items-stretch mb-4 overflow-hidden"
+        style={{ border: '1px solid #E2E2E0', borderRadius: 4 }}
+      >
+        <div className="flex-1 px-4 py-2.5" style={{ borderRight: '1px solid #E2E2E0' }}>
+          <div className="label mb-0.5">Corridor Delay</div>
+          <div className="flex items-baseline gap-1">
+            <span className="text-lg font-bold" style={{ color: '#111111' }}>{corridor_summary.avg_delay_s_veh}</span>
+            <span className="text-[11px]" style={{ color: '#888888' }}>s/veh</span>
+          </div>
         </div>
-        <div className="card text-center">
-          <div className="label mb-1">Corridor LOS</div>
-          <div className={`text-3xl font-bold ${LOS_COLORS[corridor_summary.corridor_los] || 'text-white'}`}>
+        <div className="flex-1 px-4 py-2.5" style={{ borderRight: '1px solid #E2E2E0' }}>
+          <div className="label mb-0.5">Corridor LOS</div>
+          <div className="text-2xl font-bold" style={{ color: LOS_COLORS[corridor_summary.corridor_los] || '#111111' }}>
             {corridor_summary.corridor_los}
           </div>
         </div>
-        <div className="card text-center">
-          <div className="label mb-1">Total Throughput</div>
-          <div className="text-2xl font-bold text-white">{corridor_summary.total_throughput_vph.toLocaleString()}</div>
-          <div className="text-xs text-gray-500 mt-0.5">vph</div>
+        <div className="flex-1 px-4 py-2.5" style={{ borderRight: '1px solid #E2E2E0' }}>
+          <div className="label mb-0.5">Total Throughput</div>
+          <div className="flex items-baseline gap-1">
+            <span className="text-lg font-bold" style={{ color: '#111111' }}>{corridor_summary.total_throughput_vph.toLocaleString()}</span>
+            <span className="text-[11px]" style={{ color: '#888888' }}>vph</span>
+          </div>
         </div>
-        <div className="card text-center">
-          <div className="label mb-1">Intersections</div>
-          <div className="text-2xl font-bold text-white">{corridor_summary.intersections_analyzed}</div>
-          <div className="text-xs text-gray-500 mt-0.5">analyzed</div>
+        <div className="flex-1 px-4 py-2.5">
+          <div className="label mb-0.5">Intersections</div>
+          <div className="flex items-baseline gap-1">
+            <span className="text-lg font-bold" style={{ color: '#111111' }}>{corridor_summary.intersections_analyzed}</span>
+            <span className="text-[11px]" style={{ color: '#888888' }}>analyzed</span>
+          </div>
         </div>
       </div>
 
-      {/* Time-Space Diagram — primary Phase 3 deliverable */}
-      <div className="card mb-6">
-        <div className="flex items-center justify-between mb-4">
+      {/* Time-Space Diagram */}
+      <div className="card mb-4">
+        <div className="flex items-center justify-between mb-3">
           <h3 className="section-header mb-0">Time-Space Diagram</h3>
-          <span className="text-xs text-blue-400 bg-blue-900/30 border border-blue-800 px-2 py-1 rounded">
+          <span
+            className="text-[11px] px-2 py-0.5"
+            style={{ color: '#888888', backgroundColor: '#F8F8F7', border: '1px solid #E2E2E0', borderRadius: 3 }}
+          >
             Phase 3
           </span>
         </div>
@@ -173,8 +191,8 @@ export default function ResultsView() {
         />
       </div>
 
-      {/* Intersection-level summary row */}
-      <div className="card mb-6">
+      {/* Intersection-level summary */}
+      <div className="card mb-4">
         <h3 className="section-header">Intersection Summary</h3>
         <div className="overflow-x-auto">
           <table className="data-table">
@@ -184,22 +202,25 @@ export default function ResultsView() {
                 <th>Type</th>
                 <th className="text-center">Plan</th>
                 <th className="text-right">Cycle (s)</th>
-                <th className="text-right">Int. Delay (s/veh)</th>
-                <th className="text-center">Int. LOS</th>
+                <th className="text-right">Delay (s/veh)</th>
+                <th className="text-center">LOS</th>
               </tr>
             </thead>
             <tbody>
               {intersections.map((ix) => (
                 <tr key={ix.id}>
-                  <td className="font-medium text-gray-100">{ix.name}</td>
-                  <td className="text-gray-400">{ix.type}</td>
+                  <td className="font-medium" style={{ color: '#111111' }}>{ix.name}</td>
+                  <td style={{ color: '#888888' }}>{ix.type}</td>
                   <td className="text-center">
-                    <span className="px-2 py-0.5 bg-blue-900/40 border border-blue-800 text-blue-300 rounded text-xs">
+                    <span
+                      className="px-1.5 py-0 text-[11px]"
+                      style={{ backgroundColor: '#F8F8F7', border: '1px solid #E2E2E0', color: '#444444', borderRadius: 3 }}
+                    >
                       {ix.active_plan}
                     </span>
                   </td>
-                  <td className="text-right font-mono text-gray-300">{ix.cycle}</td>
-                  <td className="text-right font-mono text-gray-200">{ix.intersection_delay_s_veh}</td>
+                  <td className="text-right font-mono" style={{ color: '#444444' }}>{ix.cycle}</td>
+                  <td className="text-right font-mono font-semibold" style={{ color: '#111111' }}>{ix.intersection_delay_s_veh}</td>
                   <td className="text-center"><LOSBadge los={ix.intersection_los} /></td>
                 </tr>
               ))}
@@ -210,8 +231,8 @@ export default function ResultsView() {
 
       {/* Tabbed detail tables */}
       <div className="card">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex gap-1">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex gap-0.5">
             {[
               { key: 'delay', label: 'Delay & LOS' },
               { key: 'queue', label: 'Queue Length' },
@@ -220,9 +241,14 @@ export default function ResultsView() {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                  activeTab === tab.key ? 'tab-active' : 'tab-inactive'
-                }`}
+                className="px-3 py-1 text-[12px] font-medium transition-colors"
+                style={{
+                  borderRadius: 3,
+                  backgroundColor: activeTab === tab.key ? '#111111' : 'transparent',
+                  color: activeTab === tab.key ? '#FFFFFF' : '#888888',
+                }}
+                onMouseEnter={(e) => { if (activeTab !== tab.key) e.currentTarget.style.backgroundColor = '#F8F8F7' }}
+                onMouseLeave={(e) => { if (activeTab !== tab.key) e.currentTarget.style.backgroundColor = 'transparent' }}
               >
                 {tab.label}
               </button>
@@ -250,9 +276,9 @@ export default function ResultsView() {
               })
               exportCSV(rows, filename)
             }}
-            className="btn-secondary text-xs flex items-center gap-1.5"
+            className="btn-secondary gap-1"
           >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
@@ -270,8 +296,8 @@ export default function ResultsView() {
                   <th>Dir</th>
                   <th>Mvmt</th>
                   <th className="text-center">Ph</th>
-                  <th className="text-right">Vol (vph)</th>
-                  <th className="text-right">Cap (vph)</th>
+                  <th className="text-right">Vol</th>
+                  <th className="text-right">Cap</th>
                   <th className="text-right">v/c</th>
                   <th className="text-right">g (s)</th>
                   <th className="text-right">Delay (s/veh)</th>
@@ -286,7 +312,8 @@ export default function ResultsView() {
                         {mvi === 0 && ap === ix.approaches[0] ? (
                           <td
                             rowSpan={ix.approaches.reduce((s, a) => s + a.movements.length, 0)}
-                            className="font-medium text-gray-100 align-top pt-2.5 border-l-2 border-blue-700"
+                            className="font-medium align-top pt-2"
+                            style={{ color: '#111111', borderLeft: '3px solid #111111' }}
                           >
                             {ix.name}
                           </td>
@@ -294,32 +321,32 @@ export default function ResultsView() {
                         {mvi === 0 ? (
                           <td
                             rowSpan={ap.movements.length}
-                            className="text-blue-300 font-medium align-top pt-2.5"
+                            className="font-medium align-top pt-2"
+                            style={{ color: '#444444' }}
                           >
                             {ap.direction}
                           </td>
                         ) : null}
-                        <td className="font-mono text-gray-300">{mv.movement}</td>
-                        <td className="text-center text-gray-500 font-mono text-xs">{mv.phase}</td>
-                        <td className="text-right font-mono text-gray-300">{mv.volume_vph}</td>
-                        <td className="text-right font-mono text-gray-400">{mv.capacity_vph}</td>
+                        <td className="font-mono" style={{ color: '#444444' }}>{mv.movement}</td>
+                        <td className="text-center font-mono" style={{ color: '#AAAAAA' }}>{mv.phase}</td>
+                        <td className="text-right font-mono" style={{ color: '#444444' }}>{mv.volume_vph}</td>
+                        <td className="text-right font-mono" style={{ color: '#AAAAAA' }}>{mv.capacity_vph}</td>
                         <td className="text-right"><VCBadge vc={mv.vc_ratio} /></td>
-                        <td className="text-right font-mono text-gray-400">{mv.effective_green_s}</td>
-                        <td className="text-right font-mono text-gray-200 font-semibold">{mv.delay_s_veh}</td>
+                        <td className="text-right font-mono" style={{ color: '#AAAAAA' }}>{mv.effective_green_s}</td>
+                        <td className="text-right font-mono font-semibold" style={{ color: '#111111' }}>{mv.delay_s_veh}</td>
                         <td className="text-center"><LOSBadge los={mv.los} /></td>
                       </tr>
                     ))
                   )
                 )}
-                {/* Approach subtotals */}
                 {intersections.map((ix) =>
                   ix.approaches.map((ap) => (
-                    <tr key={`sub-${ix.id}-${ap.direction}`} className="bg-gray-900/60">
-                      <td className="text-xs text-gray-500 italic pl-4" colSpan={2}>
+                    <tr key={`sub-${ix.id}-${ap.direction}`} style={{ backgroundColor: '#FAFAF9' }}>
+                      <td className="text-[11px] italic pl-3" colSpan={2} style={{ color: '#AAAAAA' }}>
                         {ap.direction} approach total
                       </td>
                       <td colSpan={6} />
-                      <td className="text-right font-mono text-gray-300 font-semibold text-xs">
+                      <td className="text-right font-mono font-semibold text-[11px]" style={{ color: '#444444' }}>
                         {ap.approach_delay_s_veh} s/veh
                       </td>
                       <td className="text-center"><LOSBadge los={ap.approach_los} /></td>
@@ -348,13 +375,13 @@ export default function ResultsView() {
               <tbody>
                 {allRows.map((r, i) => (
                   <tr key={i}>
-                    <td className="font-medium text-gray-100">{r.intersection}</td>
-                    <td className="text-blue-300 font-medium">{r.approach}</td>
-                    <td className="font-mono text-gray-300">{r.movement}</td>
-                    <td className="text-right font-mono text-gray-300">{r.volume_vph}</td>
+                    <td className="font-medium" style={{ color: '#111111' }}>{r.intersection}</td>
+                    <td className="font-medium" style={{ color: '#444444' }}>{r.approach}</td>
+                    <td className="font-mono" style={{ color: '#444444' }}>{r.movement}</td>
+                    <td className="text-right font-mono" style={{ color: '#444444' }}>{r.volume_vph}</td>
                     <td className="text-right"><VCBadge vc={r.vc_ratio} /></td>
-                    <td className="text-right font-mono text-gray-200 font-semibold">{r.queue_95th_veh}</td>
-                    <td className="text-right font-mono text-gray-200">{r.queue_95th_ft}</td>
+                    <td className="text-right font-mono font-semibold" style={{ color: '#111111' }}>{r.queue_95th_veh}</td>
+                    <td className="text-right font-mono" style={{ color: '#111111' }}>{r.queue_95th_ft}</td>
                     <td className="text-center"><LOSBadge los={r.los} /></td>
                   </tr>
                 ))}
@@ -381,23 +408,24 @@ export default function ResultsView() {
                   const util = r.capacity_vph > 0
                     ? Math.min(1, r.throughput_vph / r.capacity_vph)
                     : 0
+                  const utilColor = util >= 1 ? '#DC2626' : util >= 0.85 ? '#D97706' : '#888888'
+                  const barColor = util >= 1 ? '#DC2626' : util >= 0.85 ? '#D97706' : '#16A34A'
                   return (
                     <tr key={i}>
-                      <td className="font-medium text-gray-100">{r.intersection}</td>
-                      <td className="text-blue-300 font-medium">{r.approach}</td>
-                      <td className="font-mono text-gray-300">{r.movement}</td>
-                      <td className="text-right font-mono text-gray-300">{r.volume_vph}</td>
-                      <td className="text-right font-mono text-gray-400">{r.capacity_vph}</td>
-                      <td className="text-right font-mono text-gray-200 font-semibold">{r.throughput_vph}</td>
+                      <td className="font-medium" style={{ color: '#111111' }}>{r.intersection}</td>
+                      <td className="font-medium" style={{ color: '#444444' }}>{r.approach}</td>
+                      <td className="font-mono" style={{ color: '#444444' }}>{r.movement}</td>
+                      <td className="text-right font-mono" style={{ color: '#444444' }}>{r.volume_vph}</td>
+                      <td className="text-right font-mono" style={{ color: '#AAAAAA' }}>{r.capacity_vph}</td>
+                      <td className="text-right font-mono font-semibold" style={{ color: '#111111' }}>{r.throughput_vph}</td>
                       <td className="text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <div className="w-16 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                          <div className="w-14 h-1.5 overflow-hidden" style={{ borderRadius: 2, backgroundColor: '#E2E2E0' }}>
                             <div
-                              className={`h-full rounded-full ${util >= 1 ? 'bg-red-500' : util >= 0.85 ? 'bg-yellow-500' : 'bg-green-500'}`}
-                              style={{ width: `${Math.min(100, util * 100).toFixed(0)}%` }}
+                              style={{ width: `${Math.min(100, util * 100).toFixed(0)}%`, height: '100%', borderRadius: 2, backgroundColor: barColor }}
                             />
                           </div>
-                          <span className={`text-xs font-mono ${util >= 1 ? 'text-red-400' : util >= 0.85 ? 'text-yellow-400' : 'text-gray-400'}`}>
+                          <span className="text-[11px] font-mono" style={{ color: utilColor }}>
                             {(util * 100).toFixed(0)}%
                           </span>
                         </div>
@@ -405,12 +433,11 @@ export default function ResultsView() {
                     </tr>
                   )
                 })}
-                {/* Corridor total */}
-                <tr className="bg-gray-900 border-t-2 border-gray-600">
-                  <td colSpan={5} className="font-semibold text-gray-300 text-xs uppercase tracking-wider">
+                <tr style={{ backgroundColor: '#F8F8F7', borderTop: '2px solid #E2E2E0' }}>
+                  <td colSpan={5} className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: '#444444' }}>
                     Corridor Total
                   </td>
-                  <td className="text-right font-mono font-bold text-white">
+                  <td className="text-right font-mono font-bold" style={{ color: '#111111' }}>
                     {corridor_summary.total_throughput_vph.toLocaleString()}
                   </td>
                   <td />
@@ -421,9 +448,9 @@ export default function ResultsView() {
         </div>
       </div>
 
-      <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-700">
-        <button onClick={() => setActiveView('simulation')} className="btn-secondary flex items-center gap-2">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="flex items-center justify-between mt-4 pt-3" style={{ borderTop: '1px solid #E2E2E0' }}>
+        <button onClick={() => setActiveView('simulation')} className="btn-secondary gap-2">
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
           Back to Simulation

@@ -35,9 +35,7 @@ export default function ProjectDashboard() {
     if (!newName.trim()) return
     setCreating(true)
     try {
-      const res = await axios.post('/api/projects', {
-        name: newName.trim(),
-      })
+      const res = await axios.post('/api/projects', { name: newName.trim() })
       setProject(res.data)
       setActiveView('corridor')
     } catch (e) {
@@ -97,13 +95,13 @@ export default function ProjectDashboard() {
   }
 
   return (
-    <div className="min-h-full bg-gray-50 dark:bg-gray-900 p-5">
+    <div className="min-h-full p-5" style={{ backgroundColor: '#F8F8F7' }}>
       <div className="max-w-5xl mx-auto">
         {/* Page Header */}
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h1 className="text-base font-semibold text-gray-900 dark:text-white">Project Dashboard</h1>
-            <p className="text-gray-500 dark:text-gray-400 text-xs mt-0.5">
+            <h1 className="text-base font-semibold" style={{ color: '#111111' }}>Project Dashboard</h1>
+            <p className="text-xs mt-0.5" style={{ color: '#888888' }}>
               Traffic corridor simulation projects
             </p>
           </div>
@@ -121,16 +119,12 @@ export default function ProjectDashboard() {
                 </svg>
               ) : (
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                    d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               )}
               {loadingSample ? 'Loading…' : 'Load Sample'}
             </button>
-            <button
-              onClick={() => setShowModal(true)}
-              className="btn-primary gap-1.5"
-            >
+            <button onClick={() => setShowModal(true)} className="btn-primary gap-1.5">
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
@@ -141,7 +135,10 @@ export default function ProjectDashboard() {
 
         {/* Error Banner */}
         {error && (
-          <div className="border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 px-3 py-2 mb-4 text-xs flex items-start gap-2" style={{ borderRadius: 4 }}>
+          <div
+            className="px-3 py-2 mb-4 text-xs flex items-start gap-2"
+            style={{ border: '1px solid #FECACA', backgroundColor: '#FEF2F2', color: '#DC2626', borderRadius: 4 }}
+          >
             <svg className="w-3.5 h-3.5 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -152,40 +149,50 @@ export default function ProjectDashboard() {
         {/* Loading */}
         {loading && (
           <div className="flex items-center justify-center py-16">
-            <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-            <span className="text-gray-500 dark:text-gray-400 ml-3 text-sm">Loading projects…</span>
+            <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: '#E2E2E0', borderTopColor: '#111111' }} />
+            <span className="ml-3 text-sm" style={{ color: '#888888' }}>Loading projects…</span>
           </div>
         )}
 
         {/* Empty State */}
         {!loading && projects.length === 0 && !error && (
           <div className="text-center py-12">
-            <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center mx-auto mb-3" style={{ borderRadius: 4 }}>
-              <svg className="w-6 h-6 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div
+              className="w-12 h-12 flex items-center justify-center mx-auto mb-3"
+              style={{ backgroundColor: '#F8F8F7', border: '1px solid #E2E2E0', borderRadius: 4 }}
+            >
+              <svg className="w-6 h-6" style={{ color: '#AAAAAA' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
               </svg>
             </div>
-            <h2 className="text-gray-800 dark:text-gray-300 font-semibold mb-1">No projects yet</h2>
-            <p className="text-gray-500 dark:text-gray-500 text-xs mb-6">Start from scratch or try the sample corridor to explore the app.</p>
+            <h2 className="font-semibold mb-1" style={{ color: '#111111' }}>No projects yet</h2>
+            <p className="text-xs mb-6" style={{ color: '#888888' }}>Start from scratch or try the sample corridor to explore the app.</p>
 
             {/* Sample corridor card */}
             <div className="max-w-sm mx-auto mb-4 text-left card">
               <div className="flex items-start gap-3 mb-2">
-                <div className="w-8 h-8 bg-blue-50 dark:bg-blue-900/40 border border-blue-200 dark:border-blue-700 flex items-center justify-center shrink-0 mt-0.5" style={{ borderRadius: 3 }}>
-                  <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div
+                  className="w-8 h-8 flex items-center justify-center shrink-0 mt-0.5"
+                  style={{ backgroundColor: '#F8F8F7', border: '1px solid #E2E2E0', borderRadius: 3 }}
+                >
+                  <svg className="w-4 h-4" style={{ color: '#111111' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-gray-900 dark:text-white font-semibold text-xs">Main St — Sample Corridor</h3>
-                  <p className="text-gray-500 dark:text-gray-400 text-[11px] mt-0.5">
-                    4 intersections · 35 mph · NEMA 8-phase · ped φ2/4/6/8
+                  <h3 className="font-semibold text-xs" style={{ color: '#111111' }}>Main St — Sample Corridor</h3>
+                  <p className="text-[11px] mt-0.5" style={{ color: '#888888' }}>
+                    4 intersections · 35 mph · NEMA 8-phase · ped ph2/4/6/8
                   </p>
                 </div>
               </div>
               <div className="flex flex-wrap gap-1 mb-3">
                 {['AM green wave', 'Standard volumes', 'Oak / Elm / Maple / Pine'].map((tag) => (
-                  <span key={tag} className="text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-600" style={{ borderRadius: 3 }}>
+                  <span
+                    key={tag}
+                    className="text-[10px] px-1.5 py-0.5"
+                    style={{ backgroundColor: '#F8F8F7', color: '#888888', border: '1px solid #E2E2E0', borderRadius: 3 }}
+                  >
                     {tag}
                   </span>
                 ))}
@@ -195,19 +202,17 @@ export default function ProjectDashboard() {
                 disabled={loadingSample}
                 className="btn-primary w-full justify-center"
               >
-                {loadingSample ? (
-                  <>
-                    <svg className="w-3 h-3 animate-spin mr-1.5" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                    Loading…
-                  </>
-                ) : 'Open Sample Corridor'}
+                {loadingSample ? 'Loading…' : 'Open Sample Corridor'}
               </button>
             </div>
 
-            <button onClick={() => setShowModal(true)} className="btn-ghost text-xs text-gray-500 dark:text-gray-500">
+            <button
+              onClick={() => setShowModal(true)}
+              className="text-xs transition-colors"
+              style={{ color: '#888888', background: 'none', border: 'none' }}
+              onMouseEnter={(e) => e.currentTarget.style.color = '#111111'}
+              onMouseLeave={(e) => e.currentTarget.style.color = '#888888'}
+            >
               Or create a blank project →
             </button>
           </div>
@@ -219,24 +224,28 @@ export default function ProjectDashboard() {
             {projects.map((project) => (
               <div
                 key={project.id}
-                className="card hover:border-gray-300 dark:hover:border-gray-500 transition-colors duration-150 flex flex-col"
+                className="card flex flex-col transition-colors duration-150"
+                style={{ cursor: 'default' }}
+                onMouseEnter={(e) => e.currentTarget.style.borderColor = '#111111'}
+                onMouseLeave={(e) => e.currentTarget.style.borderColor = '#E2E2E0'}
               >
-                {/* Card Header */}
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900 dark:text-white truncate text-sm leading-tight">
+                    <h3 className="font-semibold truncate text-sm leading-tight" style={{ color: '#111111' }}>
                       {project.name}
                     </h3>
                   </div>
                   <div className="ml-2 flex-shrink-0">
-                    <span className="inline-flex items-center px-1.5 py-0.5 text-[11px] font-medium bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800" style={{ borderRadius: 3 }}>
+                    <span
+                      className="inline-flex items-center px-1.5 py-0.5 text-[11px] font-medium"
+                      style={{ backgroundColor: '#F8F8F7', color: '#111111', border: '1px solid #E2E2E0', borderRadius: 3 }}
+                    >
                       {project.active_plan || 'AM'}
                     </span>
                   </div>
                 </div>
 
-                {/* Stats */}
-                <div className="flex items-center gap-3 text-[11px] text-gray-500 dark:text-gray-500 mb-3">
+                <div className="flex items-center gap-3 text-[11px] mb-3" style={{ color: '#888888' }}>
                   <span className="flex items-center gap-1">
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -251,24 +260,19 @@ export default function ProjectDashboard() {
                   </span>
                 </div>
 
-                {/* Dates */}
-                <div className="text-[11px] text-gray-400 dark:text-gray-600 mb-3 space-y-0.5">
+                <div className="text-[11px] mb-3 space-y-0.5" style={{ color: '#AAAAAA' }}>
                   <div>Created: {formatDate(project.created)}</div>
                   <div>Updated: {formatDate(project.updated)}</div>
                 </div>
 
-                {/* Actions */}
-                <div className="flex items-center gap-2 mt-auto pt-2.5 border-t border-gray-100 dark:border-gray-700">
-                  <button
-                    onClick={() => handleOpen(project.id)}
-                    className="btn-primary flex-1 justify-center"
-                  >
+                <div
+                  className="flex items-center gap-2 mt-auto pt-2.5"
+                  style={{ borderTop: '1px solid #E2E2E0' }}
+                >
+                  <button onClick={() => handleOpen(project.id)} className="btn-primary flex-1 justify-center">
                     Open
                   </button>
-                  <button
-                    onClick={() => setDeleteId(project.id)}
-                    className="btn-danger"
-                  >
+                  <button onClick={() => setDeleteId(project.id)} className="btn-danger">
                     Delete
                   </button>
                 </div>
@@ -280,11 +284,10 @@ export default function ProjectDashboard() {
 
       {/* New Project Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 w-full max-w-md" style={{ borderRadius: 4, padding: 20 }}>
-            <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5">New Project</h2>
-            <p className="text-gray-500 dark:text-gray-400 text-xs mb-4">Configure your corridor simulation project</p>
-
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
+          <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E2E2E0', borderRadius: 4, padding: 20, width: '100%', maxWidth: 448 }}>
+            <h2 className="text-sm font-semibold mb-0.5" style={{ color: '#111111' }}>New Project</h2>
+            <p className="text-xs mb-4" style={{ color: '#888888' }}>Configure your corridor simulation project</p>
             <div className="space-y-3">
               <div>
                 <label className="label block mb-1">Project Name *</label>
@@ -299,7 +302,6 @@ export default function ProjectDashboard() {
                 />
               </div>
             </div>
-
             <div className="flex items-center gap-2 mt-4">
               <button
                 onClick={handleCreate}
@@ -309,10 +311,7 @@ export default function ProjectDashboard() {
                 {creating ? 'Creating…' : 'Create Project'}
               </button>
               <button
-                onClick={() => {
-                  setShowModal(false)
-                  setNewName('')
-                }}
+                onClick={() => { setShowModal(false); setNewName('') }}
                 className="btn-secondary flex-1 justify-center"
               >
                 Cancel
@@ -324,33 +323,30 @@ export default function ProjectDashboard() {
 
       {/* Delete Confirm Modal */}
       {deleteId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 w-full max-w-sm" style={{ borderRadius: 4, padding: 20 }}>
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
+          <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E2E2E0', borderRadius: 4, padding: 20, width: '100%', maxWidth: 384 }}>
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-8 h-8 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 flex items-center justify-center" style={{ borderRadius: 3 }}>
-                <svg className="w-4 h-4 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div
+                className="w-8 h-8 flex items-center justify-center"
+                style={{ backgroundColor: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 3 }}
+              >
+                <svg className="w-4 h-4" style={{ color: '#DC2626' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 dark:text-white text-sm">Delete Project</h3>
-                <p className="text-gray-500 dark:text-gray-400 text-xs">This action cannot be undone</p>
+                <h3 className="font-semibold text-sm" style={{ color: '#111111' }}>Delete Project</h3>
+                <p className="text-xs" style={{ color: '#888888' }}>This action cannot be undone</p>
               </div>
             </div>
-            <p className="text-gray-700 dark:text-gray-300 text-xs mb-4">
+            <p className="text-xs mb-4" style={{ color: '#444444' }}>
               Are you sure you want to permanently delete this project?
             </p>
             <div className="flex gap-2">
-              <button
-                onClick={() => handleDelete(deleteId)}
-                className="btn-danger flex-1 justify-center"
-              >
+              <button onClick={() => handleDelete(deleteId)} className="btn-danger flex-1 justify-center">
                 Delete
               </button>
-              <button
-                onClick={() => setDeleteId(null)}
-                className="btn-secondary flex-1 justify-center"
-              >
+              <button onClick={() => setDeleteId(null)} className="btn-secondary flex-1 justify-center">
                 Cancel
               </button>
             </div>

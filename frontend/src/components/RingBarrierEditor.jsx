@@ -63,7 +63,6 @@ function validate(ix, plan) {
   const r2L = ring2.slice(0, barrier_pos)
   const r2R = ring2.slice(barrier_pos)
 
-  // At least one active phase per quadrant
   const activeCount = (arr) => arr.filter((n) => isActive(ix, n)).length
   if (r1L.length > 0 && activeCount(r1L) === 0)
     warnings.push({ ring: 1, side: 'left',  msg: 'Ring 1 left: no active phases before barrier.' })
@@ -74,7 +73,6 @@ function validate(ix, plan) {
   if (r2R.length > 0 && activeCount(r2R) === 0)
     warnings.push({ ring: 2, side: 'right', msg: 'Ring 2 right: no active phases after barrier.' })
 
-  // Ring-barrier termination balance: active split sums must match at barrier
   const splitSum = (arr) =>
     arr.filter((n) => isActive(ix, n)).reduce((s, n) => s + getSplit(ix, plan, n), 0)
 
@@ -94,7 +92,6 @@ function validate(ix, plan) {
       msg: `Right-of-barrier split sums differ: Ring 1 = ${r1RSum}s, Ring 2 = ${r2RSum}s.`,
     })
 
-  // Concurrent conflict: same phase number in both rings
   const r1Set = new Set(ring1)
   const r2Set = new Set(ring2)
   ring1.forEach((n) => {
@@ -132,6 +129,37 @@ function PhaseCell({
   const minViol = split > 0 && eg < minG
   const maxViol = split > 0 && eg > maxG
 
+  const cellStyle = {
+    minWidth: 88,
+    width: 88,
+    borderRadius: 3,
+    backgroundColor: active ? '#FFFFFF' : '#F5F5F4',
+    border: active
+      ? (isDragOver ? '1px solid #111111' : '1px solid #111111')
+      : '1px solid #E2E2E0',
+    borderLeft: active ? '3px solid #111111' : '1px solid #E2E2E0',
+    opacity: active ? 1 : 0.5,
+    outline: isDragging ? '2px solid #111111' : 'none',
+    outlineOffset: 1,
+  }
+
+  const inputStyle = {
+    borderRadius: 2,
+    height: 18,
+    padding: '0 2px',
+    backgroundColor: '#FFFFFF',
+    border: '1px solid #E2E2E0',
+    color: '#111111',
+    fontSize: 10,
+    textAlign: 'center',
+    width: '100%',
+    outline: 'none',
+    boxSizing: 'border-box',
+  }
+
+  const inputFocus = (e) => { e.target.style.borderColor = '#111111' }
+  const inputBlur  = (e) => { e.target.style.borderColor = '#E2E2E0' }
+
   return (
     <div
       draggable
@@ -139,20 +167,12 @@ function PhaseCell({
       onDragOver={(e) => { e.preventDefault(); onDragOver(e) }}
       onDrop={(e) => { e.preventDefault(); onDrop(e) }}
       onDragEnd={onDragEnd}
-      className={`relative flex flex-col border transition-all select-none cursor-grab active:cursor-grabbing
-        ${active
-          ? isDragOver
-            ? 'border-blue-400 bg-blue-950/60'
-            : 'border-gray-600 bg-gray-800/80 hover:border-gray-500'
-          : 'border-gray-700/50 bg-gray-900/40 opacity-40'
-        }
-        ${isDragging ? 'opacity-30 ring-1 ring-blue-500' : ''}
-      `}
-      style={{ minWidth: 88, width: 88, borderRadius: 3 }}
+      className="relative flex flex-col select-none cursor-grab active:cursor-grabbing transition-all"
+      style={cellStyle}
     >
       {/* Header: phase number + toggles */}
       <div className="flex items-center justify-between px-1.5 pt-1.5 pb-1">
-        <span className={`text-xs font-bold ${active ? 'text-white' : 'text-gray-600'}`}>
+        <span className="text-xs font-bold" style={{ color: active ? '#111111' : '#AAAAAA' }}>
           φ{phNum}
         </span>
         <div className="flex items-center gap-1">
@@ -166,25 +186,29 @@ function PhaseCell({
                 onPedUpdate({ add: { phase: phNum, walk_s: 7, ped_clearance_s: 14 } })
               }
             }}
-            className={`text-[9px] px-1 py-0 leading-4 transition-colors ${
-              hasPed
-                ? 'bg-teal-800 text-teal-300 border border-teal-600'
-                : 'text-gray-600 hover:text-gray-400'
-            }`}
-            style={{ borderRadius: 2 }}
+            className="text-[9px] px-1 py-0 leading-4 transition-colors font-bold"
+            style={{
+              borderRadius: 2,
+              backgroundColor: hasPed ? '#111111' : 'transparent',
+              color: hasPed ? '#FFFFFF' : '#BBBBBB',
+              border: hasPed ? 'none' : 'none',
+            }}
           >P</button>
           {/* Active toggle */}
           <button
             title={active ? 'Deactivate phase' : 'Activate phase'}
             onClick={() => onPhaseUpdate(key, { active: !active })}
-            className={`w-3 h-3 border flex items-center justify-center transition-colors ${
-              active
-                ? 'bg-green-500 border-green-400'
-                : 'bg-gray-700 border-gray-600 hover:border-gray-500'
-            }`}
-            style={{ borderRadius: '50%' }}
+            className="w-3 h-3 border flex items-center justify-center transition-colors"
+            style={{
+              borderRadius: '50%',
+              backgroundColor: active ? '#111111' : '#FFFFFF',
+              borderColor: active ? '#111111' : '#CCCCCC',
+            }}
           >
-            <span className={`block w-1.5 h-1.5 ${active ? 'bg-white' : 'bg-gray-500'}`} style={{ borderRadius: '50%' }} />
+            <span
+              className="block w-1.5 h-1.5"
+              style={{ borderRadius: '50%', backgroundColor: active ? '#FFFFFF' : '#DDDDDD' }}
+            />
           </button>
         </div>
       </div>
@@ -194,37 +218,43 @@ function PhaseCell({
         <div className="px-1.5 pb-1.5 space-y-1 flex-1">
           {/* Split input */}
           <div className="flex items-center gap-0.5">
-            <label className="text-gray-500 text-[9px] w-6 shrink-0">Spl</label>
+            <label className="text-[9px] w-6 shrink-0" style={{ color: '#888888' }}>Spl</label>
             <input
               type="number"
-              className="bg-gray-900 border border-gray-600 text-white text-[10px] text-center w-full focus:border-blue-500 focus:outline-none"
-              style={{ borderRadius: 2, height: 18, padding: '0 2px' }}
+              style={inputStyle}
+              onFocus={inputFocus}
+              onBlur={inputBlur}
               value={split}
               onChange={(e) => onSplitUpdate(key, e.target.value)}
               min={0} max={cycle} step={1}
               onClick={(e) => e.stopPropagation()}
             />
-            <span className="text-gray-500 text-[9px]">s</span>
+            <span className="text-[9px]" style={{ color: '#888888' }}>s</span>
           </div>
 
           {/* Green bar */}
-          <div className="flex h-1.5 overflow-hidden" style={{ borderRadius: 2 }} title={`Eff green ${eg}s / Yellow ${yellow}s / All-red ${allRed}s`}>
-            <div className="bg-green-500" style={{ width: `${pctG}%` }} />
-            <div className="bg-yellow-500" style={{ width: `${pctY}%` }} />
-            <div className="bg-red-700"   style={{ width: `${pctR}%` }} />
-            <div className="bg-gray-700 flex-1" />
+          <div
+            className="flex h-1.5 overflow-hidden"
+            style={{ borderRadius: 2 }}
+            title={`Eff green ${eg}s / Yellow ${yellow}s / All-red ${allRed}s`}
+          >
+            <div style={{ width: `${pctG}%`, backgroundColor: '#16A34A' }} />
+            <div style={{ width: `${pctY}%`, backgroundColor: '#CA8A04' }} />
+            <div style={{ width: `${pctR}%`, backgroundColor: '#DC2626' }} />
+            <div style={{ flex: 1, backgroundColor: '#F0F0EE' }} />
           </div>
 
           {/* Min / Max green */}
           <div className="grid grid-cols-2 gap-0.5">
             <div>
-              <div className={`text-[8px] mb-0.5 ${minViol ? 'text-orange-400' : 'text-gray-500'}`}>
+              <div className="text-[8px] mb-0.5" style={{ color: minViol ? '#EF4444' : '#888888' }}>
                 Min{minViol ? '!' : ''}
               </div>
               <input
                 type="number"
-                className="bg-gray-900 border border-gray-600 text-white text-[10px] text-center w-full focus:border-blue-500 focus:outline-none"
-                style={{ borderRadius: 2, height: 18, padding: '0 2px' }}
+                style={inputStyle}
+                onFocus={inputFocus}
+                onBlur={inputBlur}
                 value={minG}
                 onChange={(e) => onPhaseUpdate(key, { min_green: Number(e.target.value) })}
                 min={1} max={120} step={1}
@@ -232,13 +262,14 @@ function PhaseCell({
               />
             </div>
             <div>
-              <div className={`text-[8px] mb-0.5 ${maxViol ? 'text-amber-400' : 'text-gray-500'}`}>
+              <div className="text-[8px] mb-0.5" style={{ color: maxViol ? '#EF4444' : '#888888' }}>
                 Max{maxViol ? '!' : ''}
               </div>
               <input
                 type="number"
-                className="bg-gray-900 border border-gray-600 text-white text-[10px] text-center w-full focus:border-blue-500 focus:outline-none"
-                style={{ borderRadius: 2, height: 18, padding: '0 2px' }}
+                style={inputStyle}
+                onFocus={inputFocus}
+                onBlur={inputBlur}
                 value={maxG}
                 onChange={(e) => onPhaseUpdate(key, { max_green: Number(e.target.value) })}
                 min={1} max={200} step={1}
@@ -250,11 +281,12 @@ function PhaseCell({
           {/* Yellow / All-Red */}
           <div className="grid grid-cols-2 gap-0.5">
             <div>
-              <div className="text-[8px] text-gray-500 mb-0.5">Yel</div>
+              <div className="text-[8px] mb-0.5" style={{ color: '#888888' }}>Yel</div>
               <input
                 type="number"
-                className="bg-gray-900 border border-gray-600 text-white text-[10px] text-center w-full focus:border-blue-500 focus:outline-none"
-                style={{ borderRadius: 2, height: 18, padding: '0 2px' }}
+                style={inputStyle}
+                onFocus={inputFocus}
+                onBlur={inputBlur}
                 value={yellow}
                 onChange={(e) => onPhaseUpdate(key, { yellow: Number(e.target.value) })}
                 min={1} max={10} step={0.5}
@@ -262,11 +294,12 @@ function PhaseCell({
               />
             </div>
             <div>
-              <div className="text-[8px] text-gray-500 mb-0.5">AR</div>
+              <div className="text-[8px] mb-0.5" style={{ color: '#888888' }}>AR</div>
               <input
                 type="number"
-                className="bg-gray-900 border border-gray-600 text-white text-[10px] text-center w-full focus:border-blue-500 focus:outline-none"
-                style={{ borderRadius: 2, height: 18, padding: '0 2px' }}
+                style={inputStyle}
+                onFocus={inputFocus}
+                onBlur={inputBlur}
                 value={allRed}
                 onChange={(e) => onPhaseUpdate(key, { all_red: Number(e.target.value) })}
                 min={0} max={10} step={0.5}
@@ -277,8 +310,13 @@ function PhaseCell({
 
           {/* Recall */}
           <select
-            className="bg-gray-900 border border-gray-600 text-gray-300 w-full focus:border-blue-500 focus:outline-none"
-            style={{ borderRadius: 2, height: 18, fontSize: 9, padding: '0 2px' }}
+            style={{
+              ...inputStyle,
+              fontSize: 9,
+              padding: '0 2px',
+            }}
+            onFocus={inputFocus}
+            onBlur={inputBlur}
             value={phase.recall || 'None'}
             onChange={(e) => onPhaseUpdate(key, { recall: e.target.value })}
             onClick={(e) => e.stopPropagation()}
@@ -288,13 +326,14 @@ function PhaseCell({
 
           {/* Ped inputs */}
           {hasPed && (
-            <div className="pt-0.5 border-t border-teal-800/50 space-y-0.5">
+            <div className="pt-0.5 space-y-0.5" style={{ borderTop: '1px solid #E2E2E0' }}>
               <div className="flex items-center gap-0.5">
-                <span className="text-[8px] text-teal-400 w-5">Wlk</span>
+                <span className="text-[8px] w-5" style={{ color: '#888888' }}>Wlk</span>
                 <input
                   type="number"
-                  className="bg-gray-900 border border-teal-800 text-teal-300 text-[10px] text-center w-full focus:outline-none"
-                  style={{ borderRadius: 2, height: 18, padding: '0 2px' }}
+                  style={inputStyle}
+                  onFocus={inputFocus}
+                  onBlur={inputBlur}
                   value={ped.walk_s}
                   onChange={(e) => onPedUpdate({ update: { phase: phNum, walk_s: Number(e.target.value) } })}
                   min={1} max={60}
@@ -302,11 +341,12 @@ function PhaseCell({
                 />
               </div>
               <div className="flex items-center gap-0.5">
-                <span className="text-[8px] text-teal-400 w-5">Clr</span>
+                <span className="text-[8px] w-5" style={{ color: '#888888' }}>Clr</span>
                 <input
                   type="number"
-                  className="bg-gray-900 border border-teal-800 text-teal-300 text-[10px] text-center w-full focus:outline-none"
-                  style={{ borderRadius: 2, height: 18, padding: '0 2px' }}
+                  style={inputStyle}
+                  onFocus={inputFocus}
+                  onBlur={inputBlur}
                   value={ped.ped_clearance_s}
                   onChange={(e) => onPedUpdate({ update: { phase: phNum, ped_clearance_s: Number(e.target.value) } })}
                   min={1} max={90}
@@ -319,7 +359,7 @@ function PhaseCell({
       )}
 
       {/* Drag grip indicator */}
-      <div className="absolute top-1 left-1 opacity-20 pointer-events-none">
+      <div className="absolute top-1 left-1 pointer-events-none" style={{ opacity: 0.15 }}>
         <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
           <path d="M7 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 2zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 14zm6-8a2 2 0 1 0-.001-4.001A2 2 0 0 0 13 6zm0 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 14z" />
         </svg>
@@ -341,30 +381,44 @@ function BarrierSlot({ pos, isBarrier, onDrop, onDragOver, dragActive }) {
       onDrop={(e) => { e.preventDefault(); setOver(false); onDrop(pos) }}
     >
       {isBarrier ? (
-        /* The actual barrier line */
         <div
-          className={`relative flex flex-col items-center justify-center h-full transition-colors ${
-            dragActive && over ? 'opacity-100' : ''
-          }`}
+          className="relative flex flex-col items-center justify-center h-full transition-colors"
           title="Drag a cell here to move barrier"
         >
-          <div className="w-0.5 h-full bg-gray-400 absolute" style={{ left: '50%' }} />
-          <div className={`z-10 px-0.5 py-1 rounded text-[9px] font-bold bg-gray-700 border border-gray-500 text-gray-300 rotate-90 tracking-widest`}
-            style={{ writingMode: 'horizontal-tb' }}>
+          <div className="w-px h-full absolute" style={{ left: '50%', backgroundColor: '#111111' }} />
+          <div
+            className="z-10 px-0.5 py-1 text-[9px] font-bold tracking-widest"
+            style={{
+              writingMode: 'horizontal-tb',
+              backgroundColor: '#F8F8F7',
+              border: '1px solid #E2E2E0',
+              color: '#111111',
+              borderRadius: 2,
+            }}
+          >
             ‖
           </div>
           {dragActive && (
-            <div className={`absolute inset-0 rounded border-2 transition-colors ${
-              over ? 'border-blue-400 bg-blue-900/20' : 'border-transparent'
-            }`} />
+            <div
+              className="absolute inset-0 transition-colors"
+              style={{
+                border: over ? '2px solid #111111' : '2px solid transparent',
+                backgroundColor: over ? 'rgba(17,17,17,0.05)' : 'transparent',
+                borderRadius: 2,
+              }}
+            />
           )}
         </div>
       ) : (
-        /* A slot where the barrier can snap to */
         dragActive && (
-          <div className={`w-1 h-full rounded transition-colors ${
-            over ? 'bg-blue-400 w-1.5' : 'bg-transparent'
-          }`} />
+          <div
+            className="h-full transition-colors"
+            style={{
+              width: over ? 6 : 4,
+              backgroundColor: over ? '#111111' : 'transparent',
+              borderRadius: 1,
+            }}
+          />
         )
       )}
     </div>
@@ -378,29 +432,23 @@ function RingRow({
   dragState, setDragState,
   onPhaseUpdate, onSplitUpdate, onPedUpdate, onRingConfigUpdate,
 }) {
-  // phases = ordered array of phase numbers for this ring
-
   function handleDragStart(phNum, pos) {
     setDragState({ phNum, ring: ringNum, pos })
   }
 
-  function handleDragOver(phNum) {
-    // visual feedback handled inside cell
-  }
+  function handleDragOver(phNum) {}
 
   function handleDrop(targetPos, targetPhNum) {
     if (!dragState) return
     const { phNum: srcPh, ring: srcRing, pos: srcPos } = dragState
 
     if (srcRing === ringNum) {
-      // Reorder within same ring
       const newPhases = [...phases]
       newPhases.splice(srcPos, 1)
       const insertAt = newPhases.indexOf(targetPhNum)
       newPhases.splice(insertAt >= 0 ? insertAt : newPhases.length, 0, srcPh)
       onRingConfigUpdate({ [`ring${ringNum}`]: newPhases })
     } else {
-      // Move between rings: remove from source ring, insert in target ring
       const srcKey = `ring${srcRing}`
       const tgtKey = `ring${ringNum}`
       const srcRingPhases = [...(ix.ring_config?.[srcKey] || [])]
@@ -414,7 +462,6 @@ function RingRow({
   }
 
   function handleDropOnBarrierSlot(slotPos) {
-    // slotPos = new barrier_pos value (how many cells are to its left)
     if (dragState && dragState.ring !== ringNum) return
     onRingConfigUpdate({ barrier_pos: slotPos })
     setDragState(null)
@@ -422,10 +469,8 @@ function RingRow({
 
   const dragActive = !!dragState
 
-  // Build rendered elements: cells interleaved with slot dividers, plus the barrier
   const elements = []
   phases.forEach((phNum, i) => {
-    // Slot before each cell (for barrier drop)
     elements.push(
       <BarrierSlot
         key={`slot-${i}`}
@@ -454,7 +499,6 @@ function RingRow({
       />
     )
   })
-  // Trailing slot (for barrier at end)
   elements.push(
     <BarrierSlot
       key="slot-end"
@@ -466,22 +510,26 @@ function RingRow({
     />
   )
 
-  // Drop zone when ring is empty
   const isEmpty = phases.length === 0
   return (
     <div className="flex items-stretch min-h-[110px]">
       <div className="flex items-center justify-center w-10 shrink-0">
-        <span className="text-xs font-semibold text-gray-500 tracking-wider"
-          style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
+        <span
+          className="text-xs font-semibold tracking-wider"
+          style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', color: '#888888' }}
+        >
           Ring {ringNum}
         </span>
       </div>
       <div
-        className={`flex items-start gap-0 flex-1 py-2 pr-2 rounded-lg transition-colors ${
-          isEmpty
-            ? 'border-2 border-dashed border-gray-600 bg-gray-900/30 justify-center items-center'
-            : ''
-        }`}
+        className="flex items-start gap-0 flex-1 py-2 pr-2 transition-colors"
+        style={isEmpty ? {
+          border: '1px dashed #E2E2E0',
+          backgroundColor: '#F8F8F7',
+          justifyContent: 'center',
+          alignItems: 'center',
+          borderRadius: 3,
+        } : {}}
         onDragOver={(e) => { if (isEmpty) e.preventDefault() }}
         onDrop={(e) => {
           if (!isEmpty || !dragState) return
@@ -496,7 +544,7 @@ function RingRow({
         }}
       >
         {isEmpty ? (
-          <span className="text-xs text-gray-600 italic">Drop phases here</span>
+          <span className="text-xs italic" style={{ color: '#AAAAAA' }}>Drop phases here</span>
         ) : (
           elements
         )}
@@ -543,12 +591,12 @@ function OverlapsEditor({ ix, onUpdate }) {
     <div>
       <div className="flex items-center justify-between mb-3">
         <div>
-          <h4 className="text-sm font-semibold text-gray-300">Overlap Phases</h4>
-          <p className="text-xs text-gray-500 mt-0.5">
+          <h4 className="text-sm font-semibold" style={{ color: '#111111' }}>Overlap Phases</h4>
+          <p className="text-xs mt-0.5" style={{ color: '#888888' }}>
             NEMA overlaps A–D run concurrent with selected phases.
           </p>
         </div>
-        <button onClick={addOverlap} className="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1.5">
+        <button onClick={addOverlap} className="btn-secondary gap-1.5">
           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
@@ -557,41 +605,52 @@ function OverlapsEditor({ ix, onUpdate }) {
       </div>
 
       {overlaps.length === 0 ? (
-        <p className="text-gray-600 text-xs italic">No overlaps defined.</p>
+        <p className="text-xs italic" style={{ color: '#AAAAAA' }}>No overlaps defined.</p>
       ) : (
         <div className="space-y-2">
           {overlaps.map((ov, idx) => (
-            <div key={idx} className="flex items-center gap-3 px-3 py-2.5 bg-gray-900/60 rounded-lg border border-gray-700">
+            <div
+              key={idx}
+              className="flex items-center gap-3 px-3 py-2.5"
+              style={{ border: '1px solid #E2E2E0', borderRadius: 3, backgroundColor: '#FAFAF9' }}
+            >
               <div className="flex items-center gap-2 shrink-0">
-                <span className="text-xs text-gray-500">Overlap</span>
+                <span className="text-xs" style={{ color: '#888888' }}>Overlap</span>
                 <input
                   type="text"
-                  className="bg-gray-800 border border-gray-600 rounded text-white text-xs text-center w-10 py-0.5 font-bold focus:border-blue-500 focus:outline-none uppercase"
+                  className="text-xs text-center font-bold w-10 py-0.5 uppercase"
+                  style={{ border: '1px solid #E2E2E0', borderRadius: 3, color: '#111111', backgroundColor: '#FFFFFF', outline: 'none' }}
                   value={ov.label}
                   maxLength={4}
                   onChange={(e) => updateOverlap(idx, { label: e.target.value.toUpperCase() })}
+                  onFocus={(e) => e.target.style.borderColor = '#111111'}
+                  onBlur={(e) => e.target.style.borderColor = '#E2E2E0'}
                 />
               </div>
               <div className="flex items-center gap-1 flex-1 flex-wrap">
-                <span className="text-xs text-gray-500 mr-1">phases:</span>
+                <span className="text-xs mr-1" style={{ color: '#888888' }}>phases:</span>
                 {activePhaseNums.map((n) => {
                   const on = (ov.phases || []).includes(n)
                   return (
                     <button
                       key={n}
                       onClick={() => togglePhase(idx, n)}
-                      className={`w-7 h-7 rounded-full text-xs font-bold border transition-colors ${
-                        on
-                          ? 'bg-purple-700 border-purple-500 text-white'
-                          : 'bg-gray-800 border-gray-600 text-gray-500 hover:border-gray-400'
-                      }`}
+                      className="w-7 h-7 rounded-full text-xs font-bold transition-colors"
+                      style={{
+                        backgroundColor: on ? '#111111' : '#FFFFFF',
+                        border: on ? '1px solid #111111' : '1px solid #E2E2E0',
+                        color: on ? '#FFFFFF' : '#888888',
+                      }}
                     >{n}</button>
                   )
                 })}
               </div>
               <button
                 onClick={() => removeOverlap(idx)}
-                className="text-gray-600 hover:text-red-400 transition-colors shrink-0"
+                className="transition-colors shrink-0"
+                style={{ color: '#BBBBBB' }}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#EF4444'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#BBBBBB'}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -610,12 +669,11 @@ function OverlapsEditor({ ix, onUpdate }) {
 
 export default function RingBarrierEditor({ ix, activePlan, onUpdate }) {
   const [plan, setPlan] = useState(activePlan || 'AM')
-  const [dragState, setDragState] = useState(null) // { phNum, ring, pos }
+  const [dragState, setDragState] = useState(null)
 
   const { ring1, ring2, barrier_pos } = getRingConfig(ix)
   const warnings = validate(ix, plan)
 
-  // All phase numbers that exist in neither ring (unassigned)
   const assignedPhases = new Set([...ring1, ...ring2])
   const unassigned = ALL_PHASES.filter((n) => !assignedPhases.has(n))
 
@@ -665,25 +723,35 @@ export default function RingBarrierEditor({ ix, activePlan, onUpdate }) {
       {/* Plan switcher + reset */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex gap-1 bg-gray-900 rounded-lg p-1">
+          <div
+            className="flex gap-0.5 p-0.5"
+            style={{ backgroundColor: '#F0F0EE', border: '1px solid #E2E2E0', borderRadius: 3 }}
+          >
             {PLANS.map((p) => (
               <button
                 key={p}
                 onClick={() => setPlan(p)}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
-                  plan === p ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-gray-200'
-                }`}
+                className="px-3 py-1 text-xs font-semibold transition-colors"
+                style={{
+                  borderRadius: 2,
+                  backgroundColor: plan === p ? '#111111' : 'transparent',
+                  color: plan === p ? '#FFFFFF' : '#888888',
+                  border: 'none',
+                }}
               >{p}</button>
             ))}
           </div>
-          <span className="text-xs text-gray-500">
-            Cycle: <strong className="text-gray-300">{ix.timing_plans?.[plan]?.cycle || 120}s</strong>
-            &nbsp;·&nbsp;Offset: <strong className="text-gray-300">{ix.timing_plans?.[plan]?.offset ?? 0}s</strong>
+          <span className="text-xs" style={{ color: '#888888' }}>
+            Cycle: <strong style={{ color: '#111111' }}>{ix.timing_plans?.[plan]?.cycle || 120}s</strong>
+            &nbsp;·&nbsp;Offset: <strong style={{ color: '#111111' }}>{ix.timing_plans?.[plan]?.offset ?? 0}s</strong>
           </span>
         </div>
         <button
           onClick={resetToDefault}
-          className="text-xs text-gray-600 hover:text-gray-400 transition-colors"
+          className="text-xs transition-colors"
+          style={{ color: '#AAAAAA', background: 'none', border: 'none' }}
+          onMouseEnter={(e) => e.currentTarget.style.color = '#111111'}
+          onMouseLeave={(e) => e.currentTarget.style.color = '#AAAAAA'}
           title="Reset ring-barrier layout to standard NEMA 4+4"
         >
           Reset to 4+4 default
@@ -693,69 +761,89 @@ export default function RingBarrierEditor({ ix, activePlan, onUpdate }) {
       {/* ── Ring-barrier diagram ─────────────────────────────────────────── */}
       <div className="card !p-0 overflow-hidden">
         {/* Legend */}
-        <div className="px-4 pt-3 pb-2 border-b border-gray-700/50 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-300">Ring-Barrier Diagram</h3>
-          <div className="flex items-center gap-4 text-[10px] text-gray-500">
+        <div
+          className="px-4 pt-3 pb-2 flex items-center justify-between"
+          style={{ borderBottom: '1px solid #E2E2E0' }}
+        >
+          <h3 className="text-sm font-semibold" style={{ color: '#111111' }}>Ring-Barrier Diagram</h3>
+          <div className="flex items-center gap-4 text-[10px]" style={{ color: '#888888' }}>
             <span className="flex items-center gap-1">
-              <span className="inline-block w-3 h-3 rounded-full bg-green-500" /> Active
+              <span
+                className="inline-block w-3 h-3"
+                style={{ backgroundColor: '#111111', borderRadius: '50%' }}
+              /> Active
             </span>
             <span className="flex items-center gap-1">
-              <span className="inline-block w-3 h-1 bg-gray-400" /> Barrier ‖
+              <span className="inline-block w-3 h-1" style={{ backgroundColor: '#111111' }} /> Barrier ‖
             </span>
             <span className="flex items-center gap-1">
-              <span>🚶</span> Ped phase
+              <span
+                className="inline-flex items-center justify-center w-3.5 h-3.5 text-[8px] font-bold"
+                style={{ border: '1px solid #111111', borderRadius: 2, color: '#111111' }}
+              >P</span> Ped phase
             </span>
-            <span className="text-gray-600 italic">Drag cells to reorder · Drag over barrier slot to move barrier</span>
+            <span className="italic" style={{ color: '#AAAAAA' }}>Drag cells to reorder</span>
           </div>
         </div>
 
         <div className="p-3 space-y-0 overflow-x-auto" onDragOver={(e) => e.preventDefault()}>
-          {/* Ring 1 */}
           <RingRow ringNum={1} phases={ring1} barrier_pos={barrier_pos} {...sharedProps} />
 
-          {/* Divider between rings with concurrent phase labels */}
+          {/* Divider between rings */}
           <div className="flex items-center my-1">
             <div className="w-14 shrink-0" />
-            <div className="flex-1 h-px bg-gray-700/60 relative">
-              <span className="absolute left-2 -top-2 text-[9px] text-gray-600 bg-gray-900 px-1">concurrent</span>
+            <div className="flex-1 h-px relative" style={{ backgroundColor: '#E2E2E0' }}>
+              <span
+                className="absolute left-2 -top-2 text-[9px] px-1"
+                style={{ color: '#AAAAAA', backgroundColor: '#FFFFFF' }}
+              >concurrent</span>
             </div>
           </div>
 
-          {/* Ring 2 */}
           <RingRow ringNum={2} phases={ring2} barrier_pos={barrier_pos} {...sharedProps} />
         </div>
 
         {/* Unassigned phases pool */}
         {unassigned.length > 0 && (
-          <div className="px-4 pb-3 border-t border-gray-700/50 pt-3">
+          <div className="px-4 pb-3 pt-3" style={{ borderTop: '1px solid #E2E2E0' }}>
             <div className="flex items-start gap-3">
-              <span className="text-xs text-gray-500 shrink-0 mt-1.5">Unassigned:</span>
+              <span className="text-xs shrink-0 mt-1.5" style={{ color: '#888888' }}>Unassigned:</span>
               <div className="flex gap-3 flex-wrap">
                 {unassigned.map((n) => {
                   const active = isActive(ix, n)
                   return (
                     <div key={n} className="flex items-center gap-1">
-                      {/* Draggable chip */}
                       <div
                         draggable
                         onDragStart={() => setDragState({ phNum: n, ring: 0, pos: -1 })}
                         onDragEnd={() => setDragState(null)}
-                        className="flex items-center gap-1 px-2 py-1 rounded border border-dashed border-gray-600 bg-gray-800/50 cursor-grab text-xs text-gray-400 hover:border-gray-400 hover:text-gray-300 transition-colors"
+                        className="flex items-center gap-1 px-2 py-1 cursor-grab text-xs transition-colors"
+                        style={{
+                          border: '1px dashed #E2E2E0',
+                          backgroundColor: '#F8F8F7',
+                          borderRadius: 3,
+                          color: '#888888',
+                        }}
                         title="Drag into a ring"
                       >
-                        <span className={`font-bold ${active ? 'text-white' : 'text-gray-600'}`}>φ{n}</span>
-                        <span className="text-gray-600">{active ? '●' : '○'}</span>
+                        <span className="font-bold" style={{ color: active ? '#111111' : '#BBBBBB' }}>φ{n}</span>
+                        <span style={{ color: '#CCCCCC' }}>{active ? '●' : '○'}</span>
                       </div>
-                      {/* Click-to-add buttons */}
                       <button
                         title="Add to Ring 1"
                         onClick={() => onRingConfigUpdate({ ring1: [...ring1, n] })}
-                        className="text-[10px] px-1.5 py-0.5 rounded bg-gray-800 border border-gray-600 text-gray-500 hover:text-blue-300 hover:border-blue-600 transition-colors font-mono leading-none"
+                        className="text-[10px] px-1.5 py-0.5 font-mono leading-none transition-colors"
+                        style={{ border: '1px solid #E2E2E0', borderRadius: 2, color: '#888888', backgroundColor: '#FFFFFF' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#111111'; e.currentTarget.style.color = '#111111' }}
+                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#E2E2E0'; e.currentTarget.style.color = '#888888' }}
                       >→R1</button>
                       <button
                         title="Add to Ring 2"
                         onClick={() => onRingConfigUpdate({ ring2: [...ring2, n] })}
-                        className="text-[10px] px-1.5 py-0.5 rounded bg-gray-800 border border-gray-600 text-gray-500 hover:text-blue-300 hover:border-blue-600 transition-colors font-mono leading-none"
+                        className="text-[10px] px-1.5 py-0.5 font-mono leading-none transition-colors"
+                        style={{ border: '1px solid #E2E2E0', borderRadius: 2, color: '#888888', backgroundColor: '#FFFFFF' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#111111'; e.currentTarget.style.color = '#111111' }}
+                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#E2E2E0'; e.currentTarget.style.color = '#888888' }}
                       >→R2</button>
                     </div>
                   )
@@ -767,10 +855,19 @@ export default function RingBarrierEditor({ ix, activePlan, onUpdate }) {
 
         {/* Validation warnings */}
         {warnings.length > 0 && (
-          <div className="px-4 pb-3 space-y-1.5 border-t border-gray-700/50 pt-3">
+          <div className="px-4 pb-3 space-y-1.5 pt-3" style={{ borderTop: '1px solid #E2E2E0' }}>
             {warnings.map((w, i) => (
-              <div key={i} className="flex items-start gap-2 text-xs text-amber-300 bg-amber-900/20 border border-amber-800/40 rounded px-2.5 py-1.5">
-                <svg className="w-3.5 h-3.5 mt-0.5 shrink-0 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div
+                key={i}
+                className="flex items-start gap-2 text-xs px-2.5 py-1.5"
+                style={{
+                  color: '#92400E',
+                  backgroundColor: '#FFFBEB',
+                  border: '1px solid #FCD34D',
+                  borderRadius: 3,
+                }}
+              >
+                <svg className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: '#D97706' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                     d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
@@ -816,7 +913,7 @@ function DirectionAssignment({ ix, ring1, ring2, onUpdate }) {
   return (
     <div className="card">
       <div className="flex items-center justify-between mb-3">
-        <h4 className="text-sm font-semibold text-gray-300">Direction → Phase Assignment</h4>
+        <h4 className="text-sm font-semibold" style={{ color: '#111111' }}>Direction &#8594; Phase Assignment</h4>
         <button
           onClick={() => onUpdate({
             phase_assignments: {
@@ -824,31 +921,43 @@ function DirectionAssignment({ ix, ring1, ring2, onUpdate }) {
               NB: { L: 3, T: 4, R: 4 }, SB: { L: 7, T: 8, R: 8 },
             }
           })}
-          className="text-xs text-gray-600 hover:text-gray-400 transition-colors"
+          className="text-xs transition-colors"
+          style={{ color: '#AAAAAA', background: 'none', border: 'none' }}
+          onMouseEnter={(e) => e.currentTarget.style.color = '#111111'}
+          onMouseLeave={(e) => e.currentTarget.style.color = '#AAAAAA'}
         >Reset to standard</button>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
             <tr>
-              <th className="text-left px-2 py-1.5 text-gray-500 font-medium">Dir</th>
-              <th className="px-2 py-1.5 text-gray-500 font-medium text-center">Left (φ)</th>
-              <th className="px-2 py-1.5 text-gray-500 font-medium text-center">Thru (φ)</th>
-              <th className="px-2 py-1.5 text-gray-500 font-medium text-center">Right (φ)</th>
+              <th className="text-left px-2 py-1.5 label">Dir</th>
+              <th className="px-2 py-1.5 label text-center">Left (φ)</th>
+              <th className="px-2 py-1.5 label text-center">Thru (φ)</th>
+              <th className="px-2 py-1.5 label text-center">Right (φ)</th>
             </tr>
           </thead>
           <tbody>
             {activeDirections.map((dir) => {
               const dirPa = pa[dir] || {}
               return (
-                <tr key={dir} className="border-t border-gray-700/50">
-                  <td className="px-2 py-1.5 font-semibold text-gray-300">{dir}</td>
+                <tr key={dir} style={{ borderTop: '1px solid #E2E2E0' }}>
+                  <td className="px-2 py-1.5 font-semibold" style={{ color: '#111111' }}>{dir}</td>
                   {['L', 'T', 'R'].map((mv) => (
                     <td key={mv} className="px-2 py-1.5 text-center">
                       <select
-                        className="bg-gray-800 border border-gray-600 rounded text-gray-200 text-xs py-0.5 px-1 focus:border-blue-500 focus:outline-none w-16"
+                        className="text-xs py-0.5 px-1 w-16"
+                        style={{
+                          border: '1px solid #E2E2E0',
+                          borderRadius: 3,
+                          color: '#111111',
+                          backgroundColor: '#FFFFFF',
+                          outline: 'none',
+                        }}
                         value={dirPa[mv] ?? ''}
                         onChange={(e) => updateAssignment(dir, mv, e.target.value)}
+                        onFocus={(e) => e.target.style.borderColor = '#111111'}
+                        onBlur={(e) => e.target.style.borderColor = '#E2E2E0'}
                       >
                         {allPhaseNums.map((n) => (
                           <option key={n} value={n}>φ{n}</option>
