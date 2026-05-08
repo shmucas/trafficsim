@@ -7,6 +7,7 @@ from storage import project_db
 from simulation.engine import run_simulation
 from ntcip.parser import parse_ntcip_file
 from ntcip.mappers import map_to_project_schema
+from export.pdf_report import generate_pdf_report
 import io
 
 router = APIRouter(prefix="/api")
@@ -208,6 +209,25 @@ async def ntcip_sample_csv():
         io.StringIO(sample),
         media_type="text/csv",
         headers={"Content-Disposition": 'attachment; filename="ntcip_sample.csv"'},
+    )
+
+
+@router.get("/projects/{project_id}/report")
+async def export_pdf(project_id: str):
+    project = await project_db.get_project(project_id)
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project not found")
+    results = project.get("simulation_results")
+    if not results or results.get("status") != "complete":
+        raise HTTPException(status_code=400, detail="No simulation results — run simulation first")
+    pdf_bytes = generate_pdf_report(project, results)
+    safe_name = project.get("name", "report").replace(" ", "_")
+    plan = results.get("active_plan", "AM")
+    filename = f"{safe_name}_{plan}_report.pdf"
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 

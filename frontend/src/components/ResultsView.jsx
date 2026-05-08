@@ -2,6 +2,10 @@ import React, { useState } from 'react'
 import useProjectStore from '../store/projectStore'
 import TSDCanvas from './TSDCanvas'
 
+function downloadPDF(projectId) {
+  window.open(`/api/projects/${projectId}/report`, '_blank')
+}
+
 const LOS_COLORS = {
   A: 'text-green-400', B: 'text-green-400',
   C: 'text-yellow-400', D: 'text-yellow-500',
@@ -116,10 +120,14 @@ export default function ResultsView() {
             {isSimulating ? 'Running…' : `Re-run ${activePlan}`}
           </button>
           <button
-            className="btn-secondary text-xs flex items-center gap-1.5 opacity-40 cursor-not-allowed"
-            disabled
-            title="PDF export — Phase 6"
+            onClick={() => downloadPDF(currentProject.id)}
+            className="btn-primary text-xs flex items-center gap-1.5"
+            title="Download PDF report"
           >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
             Export PDF
           </button>
         </div>

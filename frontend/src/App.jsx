@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import useProjectStore from './store/projectStore'
 import ProjectDashboard from './components/ProjectDashboard'
 import CorridorSetup from './components/CorridorSetup'
@@ -23,6 +23,7 @@ export default function App() {
     activeView,
     activePlan,
     isSaving,
+    saveError,
     setActiveView,
     setActivePlan,
     saveProject,
@@ -30,6 +31,18 @@ export default function App() {
   } = useProjectStore()
 
   const isProjectOpen = !!currentProject
+
+  // Save confirmation toast
+  const [savedToast, setSavedToast] = useState(false)
+  const prevSavingRef = useRef(false)
+  useEffect(() => {
+    if (prevSavingRef.current && !isSaving && !saveError) {
+      setSavedToast(true)
+      const t = setTimeout(() => setSavedToast(false), 2000)
+      return () => clearTimeout(t)
+    }
+    prevSavingRef.current = isSaving
+  }, [isSaving, saveError])
 
   function renderView() {
     switch (activeView) {
@@ -109,15 +122,36 @@ export default function App() {
           </div>
         )}
 
-        {/* Save button */}
+        {/* Save button + status */}
         {isProjectOpen && (
-          <button
-            onClick={saveProject}
-            disabled={isSaving}
-            className="btn-primary text-xs py-1.5 px-3"
-          >
-            {isSaving ? 'Saving…' : 'Save'}
-          </button>
+          <div className="flex items-center gap-2">
+            {saveError && (
+              <span className="text-red-400 text-xs">Save failed</span>
+            )}
+            {savedToast && !saveError && (
+              <span className="text-green-400 text-xs flex items-center gap-1">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Saved
+              </span>
+            )}
+            <button
+              onClick={saveProject}
+              disabled={isSaving}
+              className="btn-primary text-xs py-1.5 px-3 flex items-center gap-1.5"
+            >
+              {isSaving ? (
+                <>
+                  <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Saving…
+                </>
+              ) : 'Save'}
+            </button>
+          </div>
         )}
 
         {/* Dashboard button */}
