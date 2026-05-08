@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
+import axios from 'axios'
 import useProjectStore, { makeDefaultApproach } from '../store/projectStore'
 import NEMADiagram from './NEMADiagram'
 
@@ -676,30 +677,7 @@ export default function IntersectionEditor() {
 
       {/* Tab: NTCIP Import */}
       {activeTab === 'NTCIP Import' && (
-        <div className="card">
-          <h3 className="section-header">NTCIP Controller Database Import</h3>
-          <div className="mt-4 border-2 border-dashed border-gray-600 rounded-xl p-10 text-center">
-            <div className="w-14 h-14 bg-gray-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <svg className="w-7 h-7 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-              </svg>
-            </div>
-            <h4 className="text-gray-300 font-semibold text-base mb-2">
-              NTCIP Import — Coming in Phase 5
-            </h4>
-            <p className="text-gray-500 text-sm max-w-md mx-auto leading-relaxed">
-              NTCIP controller database import (Econolite ASC/3, Intelight, and generic NTCIP CSV/MDB formats)
-              will be implemented in Phase 5. Imported values will automatically populate all phasing,
-              timing, detector, and overlap fields.
-            </p>
-            <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-yellow-900/30 border border-yellow-800/50 text-yellow-400 text-xs">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Phase 5 Feature
-            </div>
-          </div>
-        </div>
+        <NTCIPImportTab intersection={ix} onApply={update} />
       )}
 
       {/* Bottom Navigation */}
@@ -723,6 +701,252 @@ export default function IntersectionEditor() {
           </svg>
         </button>
       </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// NTCIP Import Tab
+// ---------------------------------------------------------------------------
+
+function NTCIPImportTab({ intersection, onApply }) {
+  const { currentProject } = useProjectStore()
+  const fileRef = useRef(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadError, setUploadError] = useState(null)
+  const [result, setResult] = useState(null)  // {format, log, mapped}
+  const [applied, setApplied] = useState(false)
+  const [applyScope, setApplyScope] = useState({ phases: true, timing: true, overlaps: true, detectors: true })
+
+  async function uploadFile(file) {
+    if (!file) return
+    setIsUploading(true)
+    setUploadError(null)
+    setResult(null)
+    setApplied(false)
+    const form = new FormData()
+    form.append('file', file)
+    try {
+      const res = await axios.post(
+        `/api/projects/${currentProject.id}/intersections/${intersection.id}/import-ntcip`,
+        form,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      )
+      setResult(res.data)
+    } catch (err) {
+      setUploadError(err.response?.data?.detail || err.message)
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  function handleFileInput(e) {
+    uploadFile(e.target.files?.[0])
+    e.target.value = ''
+  }
+
+  function handleDrop(e) {
+    e.preventDefault()
+    setIsDragging(false)
+    uploadFile(e.dataTransfer.files?.[0])
+  }
+
+  function handleApply() {
+    if (!result?.mapped) return
+    const patch = {}
+    if (applyScope.phases) patch.nema_phases = result.mapped.nema_phases
+    if (applyScope.timing && Object.keys(result.mapped.timing_plans).length > 0) {
+      // Merge imported plans into existing plans (don't overwrite plans not in file)
+      patch.timing_plans = { ...intersection.timing_plans, ...result.mapped.timing_plans }
+    }
+    if (applyScope.overlaps) patch.overlaps = result.mapped.overlaps
+    if (applyScope.detectors) patch.detectors = result.mapped.detectors
+    onApply(patch)
+    setApplied(true)
+  }
+
+  const logCounts = result ? {
+    info: result.log.filter((l) => l.level === 'info').length,
+    warn: result.log.filter((l) => l.level === 'warn').length,
+    error: result.log.filter((l) => l.level === 'error').length,
+  } : null
+
+  const hasData = result && (
+    Object.keys(result.mapped?.nema_phases || {}).length > 0 ||
+    Object.keys(result.mapped?.timing_plans || {}).length > 0
+  )
+
+  return (
+    <div className="space-y-4">
+      {/* Header + sample download */}
+      <div className="card">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="section-header mb-0">NTCIP Controller Database Import</h3>
+          <a
+            href="/api/ntcip/sample-csv"
+            download="ntcip_sample.csv"
+            className="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1.5"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Sample CSV
+          </a>
+        </div>
+        <p className="text-gray-400 text-xs mb-4">
+          Supports Econolite ASC/3, Intelight, and Generic NTCIP CSV exports.
+          Download the sample CSV to see the expected format.
+        </p>
+
+        {/* Drop zone */}
+        <div
+          onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={handleDrop}
+          onClick={() => fileRef.current?.click()}
+          className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
+            isDragging ? 'border-blue-500 bg-blue-900/20' : 'border-gray-600 hover:border-gray-500'
+          }`}
+        >
+          <input ref={fileRef} type="file" accept=".csv,.txt,.json" className="hidden" onChange={handleFileInput} />
+          {isUploading ? (
+            <div className="flex flex-col items-center gap-3">
+              <svg className="w-8 h-8 text-blue-400 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              <span className="text-gray-400 text-sm">Parsing file…</span>
+            </div>
+          ) : (
+            <>
+              <svg className="w-10 h-10 text-gray-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+              <p className="text-gray-300 font-medium text-sm mb-1">Drop file here or click to browse</p>
+              <p className="text-gray-500 text-xs">.csv · .txt · .json</p>
+            </>
+          )}
+        </div>
+
+        {uploadError && (
+          <div className="mt-3 bg-red-900/40 border border-red-700 text-red-300 rounded-lg px-3 py-2 text-sm">
+            {uploadError}
+          </div>
+        )}
+      </div>
+
+      {/* Import log */}
+      {result && (
+        <div className="card">
+          <div className="flex items-center gap-3 mb-3">
+            <h3 className="section-header mb-0">Import Log</h3>
+            <span className="text-xs bg-gray-700 text-gray-300 rounded px-2 py-0.5">{result.format}</span>
+            {logCounts.warn > 0 && (
+              <span className="text-xs bg-yellow-900/40 text-yellow-400 border border-yellow-800/50 rounded px-2 py-0.5">
+                {logCounts.warn} warning{logCounts.warn !== 1 ? 's' : ''}
+              </span>
+            )}
+            {logCounts.error > 0 && (
+              <span className="text-xs bg-red-900/40 text-red-400 border border-red-800/50 rounded px-2 py-0.5">
+                {logCounts.error} error{logCounts.error !== 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
+          <div className="space-y-1 max-h-48 overflow-y-auto text-xs font-mono">
+            {result.log.map((entry, i) => (
+              <div key={i} className={`flex gap-2 px-2 py-1 rounded ${
+                entry.level === 'error' ? 'bg-red-900/30 text-red-300' :
+                entry.level === 'warn'  ? 'bg-yellow-900/20 text-yellow-400' :
+                'text-gray-400'
+              }`}>
+                <span className={`shrink-0 ${
+                  entry.level === 'error' ? 'text-red-500' :
+                  entry.level === 'warn'  ? 'text-yellow-500' :
+                  'text-blue-500'
+                }`}>
+                  {entry.level === 'error' ? '✗' : entry.level === 'warn' ? '⚠' : '✓'}
+                </span>
+                <span>{entry.message}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Parsed preview + apply */}
+      {result && hasData && (
+        <div className="card">
+          <h3 className="section-header">Review & Apply</h3>
+
+          {/* Scope checkboxes */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+            {[
+              { key: 'phases', label: 'Phase Parameters', count: Object.keys(result.mapped.nema_phases || {}).length },
+              { key: 'timing', label: 'Timing Plans', count: Object.keys(result.mapped.timing_plans || {}).length },
+              { key: 'overlaps', label: 'Overlaps', count: (result.mapped.overlaps || []).length },
+              { key: 'detectors', label: 'Detectors', count: (result.mapped.detectors || []).length },
+            ].map(({ key, label, count }) => (
+              <label key={key} className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${
+                applyScope[key]
+                  ? 'bg-blue-900/30 border-blue-700 text-blue-200'
+                  : 'bg-gray-800 border-gray-700 text-gray-500'
+              }`}>
+                <input
+                  type="checkbox"
+                  checked={applyScope[key]}
+                  onChange={(e) => setApplyScope((s) => ({ ...s, [key]: e.target.checked }))}
+                  className="accent-blue-500"
+                />
+                <span className="text-xs">
+                  <div className="font-medium">{label}</div>
+                  <div className="text-gray-400">{count} found</div>
+                </span>
+              </label>
+            ))}
+          </div>
+
+          {/* Quick preview table */}
+          {Object.keys(result.mapped.timing_plans || {}).length > 0 && (
+            <div className="mb-4">
+              <div className="text-xs text-gray-500 mb-2">Timing plans to import:</div>
+              <div className="grid grid-cols-3 gap-2">
+                {Object.entries(result.mapped.timing_plans).map(([plan, pd]) => (
+                  <div key={plan} className="bg-gray-900 rounded-lg px-3 py-2 text-xs">
+                    <div className="text-blue-300 font-semibold mb-1">{plan}</div>
+                    <div className="text-gray-400">Cycle: <span className="text-white">{pd.cycle}s</span></div>
+                    <div className="text-gray-400">Offset: <span className="text-white">{pd.offset}s</span></div>
+                    <div className="text-gray-400">Splits: <span className="text-white">{Object.keys(pd.splits).length} phases</span></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {applied ? (
+            <div className="flex items-center gap-2 text-green-400 text-sm bg-green-900/20 border border-green-800/50 rounded-lg px-4 py-3">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              Applied successfully. Review the Phasing and Timing tabs to verify.
+            </div>
+          ) : (
+            <button onClick={handleApply} className="btn-primary flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+              Apply to Intersection
+            </button>
+          )}
+        </div>
+      )}
+
+      {result && !hasData && logCounts.error === 0 && (
+        <div className="card text-center py-6 text-gray-500 text-sm">
+          No mappable data found. Check that your file matches the Generic NTCIP CSV format
+          or is an Econolite / Intelight export.
+        </div>
+      )}
     </div>
   )
 }
