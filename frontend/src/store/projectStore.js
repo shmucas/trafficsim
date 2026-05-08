@@ -33,6 +33,13 @@ export function makeDefaultApproach(direction) {
   }
 }
 
+export const DEFAULT_PHASE_ASSIGNMENTS = {
+  EB: { L: 1, T: 2, R: 2 },
+  WB: { L: 5, T: 6, R: 6 },
+  NB: { L: 3, T: 4, R: 4 },
+  SB: { L: 7, T: 8, R: 8 },
+}
+
 export function makeDefaultIntersection(id, name = '') {
   return {
     id,
@@ -46,6 +53,7 @@ export function makeDefaultIntersection(id, name = '') {
       makeDefaultApproach('WB'),
     ],
     nema_phases: JSON.parse(JSON.stringify(DEFAULT_NEMA_PHASES)),
+    phase_assignments: JSON.parse(JSON.stringify(DEFAULT_PHASE_ASSIGNMENTS)),
     overlaps: [],
     ped_phases: [],
     detectors: [],

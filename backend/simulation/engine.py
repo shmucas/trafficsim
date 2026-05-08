@@ -17,11 +17,16 @@ _DIRECTION_PHASE = {
 }
 
 
-def _movement_phase(direction: str, movement: str) -> int:
-    dir_map = _DIRECTION_PHASE.get(direction, {})
+def _movement_phase(direction: str, movement: str, phase_assignments=None) -> int:
+    """Return the NEMA phase number for a given direction + movement.
+
+    Uses ``phase_assignments`` from the intersection if provided, otherwise falls
+    back to the conventional _DIRECTION_PHASE mapping.
+    """
+    dir_map = (phase_assignments or {}).get(direction) or _DIRECTION_PHASE.get(direction, {})
     for m in ("L", "T", "R"):
         if m in movement:
-            return dir_map.get(m, 2)
+            return int(dir_map.get(m, 2))
     return 2
 
 
@@ -52,6 +57,7 @@ def _process_intersection(intersection: dict, demand: dict, active_plan: str) ->
     nema_phases = intersection.get("nema_phases", {})
     cycle = float(timing_plan.get("cycle", 120))
 
+    phase_assignments = intersection.get("phase_assignments") or None
     approach_results = []
 
     for approach in intersection.get("approaches", []):
@@ -81,7 +87,7 @@ def _process_intersection(intersection: dict, demand: dict, active_plan: str) ->
                     bins = demand_dir.get(m, [0, 0, 0, 0])
                     total_volume += _demand_flow(bins, phf)
 
-            phase_num = _movement_phase(direction, movement)
+            phase_num = _movement_phase(direction, movement, phase_assignments)
             phase_data = nema_phases.get(str(phase_num), {})
 
             # Skip inactive phases

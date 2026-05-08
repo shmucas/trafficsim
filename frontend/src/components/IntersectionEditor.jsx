@@ -1,22 +1,55 @@
 import React, { useState, useRef } from 'react'
 import axios from 'axios'
-import useProjectStore, { makeDefaultApproach } from '../store/projectStore'
+import useProjectStore, { makeDefaultApproach, DEFAULT_PHASE_ASSIGNMENTS } from '../store/projectStore'
 import NEMADiagram from './NEMADiagram'
 
 const TABS = ['Geometry', 'Phasing', 'Timing', 'Detectors', 'NTCIP Import']
 const MOVEMENTS = ['L', 'T', 'R', 'LT', 'TR', 'LR', 'LTR']
 const RECALL_MODES = ['None', 'Min', 'Max', 'Ped']
 const PLANS = ['AM', 'PM', 'Off-Peak']
+const DIRS = ['NB', 'SB', 'EB', 'WB']
+const PHASES = [1, 2, 3, 4, 5, 6, 7, 8]
+const OVERLAP_LABELS = ['A', 'B', 'C', 'D', 'E', 'F']
 
-// Which approaches are active per intersection type
 function getActiveDirections(type) {
   switch (type) {
     case '2-leg': return ['NB', 'SB']
     case '3-leg': return ['NB', 'SB', 'EB']
-    case '4-leg': return ['NB', 'SB', 'EB', 'WB']
     default:      return ['NB', 'SB', 'EB', 'WB']
   }
 }
+
+// ── Reusable phase badge ──────────────────────────────────────────────────────
+function PhaseBadge({ num, active = true }) {
+  return (
+    <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${
+      active
+        ? 'bg-blue-900 text-blue-300 border border-blue-700'
+        : 'bg-gray-800 text-gray-600 border border-gray-700'
+    }`}>
+      {num}
+    </span>
+  )
+}
+
+// ── Green-time bar ────────────────────────────────────────────────────────────
+function GreenBar({ split, yellow, allRed, cycle }) {
+  if (!split || !cycle) return null
+  const effG = Math.max(0, split - yellow - allRed)
+  const pctG = (effG / cycle) * 100
+  const pctY = (yellow / cycle) * 100
+  const pctR = (allRed / cycle) * 100
+  return (
+    <div className="flex h-3 rounded overflow-hidden w-full min-w-[80px]" title={`Green ${effG}s / Yellow ${yellow}s / All-Red ${allRed}s`}>
+      <div className="bg-green-600" style={{ width: `${pctG}%` }} />
+      <div className="bg-yellow-500" style={{ width: `${pctY}%` }} />
+      <div className="bg-red-800"   style={{ width: `${pctR}%` }} />
+      <div className="bg-gray-800 flex-1" />
+    </div>
+  )
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
 
 export default function IntersectionEditor() {
   const {
@@ -28,13 +61,13 @@ export default function IntersectionEditor() {
     activePlan,
   } = useProjectStore()
 
-  const [activeTab, setActiveTab] = useState('Geometry')
-  const [timingPlan, setTimingPlan] = useState(activePlan || 'AM')
+  const [activeTab, setActiveTab]     = useState('Geometry')
+  const [timingPlan, setTimingPlan]   = useState(activePlan || 'AM')
 
   if (!currentProject) return null
 
   const intersections = currentProject.intersections || []
-  const ix = intersections.find((i) => i.id === selectedIntersectionId)
+  const ix      = intersections.find((i) => i.id === selectedIntersectionId)
   const ixIndex = intersections.findIndex((i) => i.id === selectedIntersectionId)
 
   if (!ix) {
@@ -48,49 +81,49 @@ export default function IntersectionEditor() {
     )
   }
 
-  function update(data) {
-    updateIntersection(ix.id, data)
+  function update(data) { updateIntersection(ix.id, data) }
+
+  function getApproach(dir) {
+    return ix.approaches?.find((a) => a.direction === dir) || makeDefaultApproach(dir)
   }
 
-  function getApproach(direction) {
-    return ix.approaches?.find((a) => a.direction === direction) || makeDefaultApproach(direction)
-  }
-
-  function updateApproach(direction, changes) {
+  function updateApproach(dir, changes) {
     const approaches = [...(ix.approaches || [])]
-    const idx = approaches.findIndex((a) => a.direction === direction)
-    if (idx >= 0) {
-      approaches[idx] = { ...approaches[idx], ...changes }
-    } else {
-      approaches.push({ ...makeDefaultApproach(direction), ...changes })
-    }
+    const idx = approaches.findIndex((a) => a.direction === dir)
+    if (idx >= 0) approaches[idx] = { ...approaches[idx], ...changes }
+    else approaches.push({ ...makeDefaultApproach(dir), ...changes })
     update({ approaches })
   }
 
-  function updateLane(direction, laneIndex, changes) {
-    const approach = getApproach(direction)
-    const lanes = [...(approach.lanes || [])]
+  function updateLane(dir, laneIndex, changes) {
+    const ap = getApproach(dir)
+    const lanes = [...(ap.lanes || [])]
     lanes[laneIndex] = { ...lanes[laneIndex], ...changes }
-    updateApproach(direction, { lanes })
+    updateApproach(dir, { lanes })
   }
 
-  function addLane(direction) {
-    const approach = getApproach(direction)
-    const lanes = [...(approach.lanes || []), { movement: 'T', width_ft: 12 }]
-    updateApproach(direction, { lanes })
+  function addLane(dir) {
+    const ap = getApproach(dir)
+    updateApproach(dir, { lanes: [...(ap.lanes || []), { movement: 'T', width_ft: 12 }] })
   }
 
-  function removeLane(direction, laneIndex) {
-    const approach = getApproach(direction)
-    const lanes = [...(approach.lanes || [])]
+  function removeLane(dir, laneIndex) {
+    const ap = getApproach(dir)
+    const lanes = [...(ap.lanes || [])]
     lanes.splice(laneIndex, 1)
-    updateApproach(direction, { lanes })
+    updateApproach(dir, { lanes })
   }
 
-  function updatePhase(phaseKey, changes) {
+  function updatePhase(key, changes) {
     const nema_phases = { ...(ix.nema_phases || {}) }
-    nema_phases[phaseKey] = { ...(nema_phases[phaseKey] || {}), ...changes }
+    nema_phases[key] = { ...(nema_phases[key] || {}), ...changes }
     update({ nema_phases })
+  }
+
+  function updatePhaseAssignment(dir, movement, phaseNum) {
+    const pa = { ...(ix.phase_assignments || DEFAULT_PHASE_ASSIGNMENTS) }
+    pa[dir] = { ...(pa[dir] || {}), [movement]: Number(phaseNum) }
+    update({ phase_assignments: pa })
   }
 
   function updateTiming(plan, changes) {
@@ -99,51 +132,112 @@ export default function IntersectionEditor() {
     update({ timing_plans })
   }
 
-  function updateSplit(plan, phaseKey, value) {
+  function updateSplit(plan, key, value) {
     const timing_plans = { ...(ix.timing_plans || {}) }
-    const planData = { ...(timing_plans[plan] || {}) }
-    const splits = { ...(planData.splits || {}), [phaseKey]: Number(value) }
-    timing_plans[plan] = { ...planData, splits }
+    const pd = { ...(timing_plans[plan] || {}) }
+    pd.splits = { ...(pd.splits || {}), [key]: Number(value) }
+    timing_plans[plan] = pd
     update({ timing_plans })
   }
 
-  function updateDetector(direction, field, value) {
-    const approach = getApproach(direction)
-    const detector = { ...(approach.detector || {}), [field]: value }
-    updateApproach(direction, { detector })
+  function copyPlan(fromPlan, toPlan) {
+    const src = ix.timing_plans?.[fromPlan]
+    if (!src) return
+    const timing_plans = { ...(ix.timing_plans || {}) }
+    timing_plans[toPlan] = {
+      ...timing_plans[toPlan],
+      splits: { ...src.splits },
+      cycle: src.cycle,
+      offset: src.offset,
+    }
+    update({ timing_plans })
+  }
+
+  function updateDetector(dir, field, value) {
+    const ap = getApproach(dir)
+    updateApproach(dir, { detector: { ...(ap.detector || {}), [field]: value } })
   }
 
   function handleTypeChange(newType) {
     const dirs = getActiveDirections(newType)
-    // Ensure all needed approaches exist
-    const existingApproaches = ix.approaches || []
-    const updatedApproaches = dirs.map((dir) => {
-      const existing = existingApproaches.find((a) => a.direction === dir)
-      return existing || makeDefaultApproach(dir)
-    })
+    const existing = ix.approaches || []
+    const updatedApproaches = dirs.map((d) => existing.find((a) => a.direction === d) || makeDefaultApproach(d))
     update({ type: newType, approaches: updatedApproaches })
   }
 
+  // ── Overlaps helpers ────────────────────────────────────────────────────────
+
+  function addOverlap() {
+    const used = (ix.overlaps || []).map((o) => o.label)
+    const label = OVERLAP_LABELS.find((l) => !used.includes(l)) || `OL${(ix.overlaps || []).length + 1}`
+    update({ overlaps: [...(ix.overlaps || []), { label, phases: [] }] })
+  }
+
+  function updateOverlap(idx, changes) {
+    const overlaps = [...(ix.overlaps || [])]
+    overlaps[idx] = { ...overlaps[idx], ...changes }
+    update({ overlaps })
+  }
+
+  function removeOverlap(idx) {
+    const overlaps = [...(ix.overlaps || [])]
+    overlaps.splice(idx, 1)
+    update({ overlaps })
+  }
+
+  function toggleOverlapPhase(idx, phNum) {
+    const ov = ix.overlaps?.[idx] || {}
+    const phases = [...(ov.phases || [])]
+    const pos = phases.indexOf(phNum)
+    if (pos >= 0) phases.splice(pos, 1)
+    else phases.push(phNum)
+    phases.sort((a, b) => a - b)
+    updateOverlap(idx, { phases })
+  }
+
+  // ── Ped phases helpers ──────────────────────────────────────────────────────
+
+  function addPedPhase() {
+    update({ ped_phases: [...(ix.ped_phases || []), { phase: 2, walk_s: 7, ped_clearance_s: 14 }] })
+  }
+
+  function updatePedPhase(idx, changes) {
+    const ped_phases = [...(ix.ped_phases || [])]
+    ped_phases[idx] = { ...ped_phases[idx], ...changes }
+    update({ ped_phases })
+  }
+
+  function removePedPhase(idx) {
+    const ped_phases = [...(ix.ped_phases || [])]
+    ped_phases.splice(idx, 1)
+    update({ ped_phases })
+  }
+
+  // ── Derived state ───────────────────────────────────────────────────────────
+
   const activeDirections = getActiveDirections(ix.type)
-  const activePhaseKeys = Object.entries(ix.nema_phases || {})
-    .filter(([, p]) => p.active)
-    .map(([k]) => k)
-    .sort((a, b) => Number(a) - Number(b))
+  const activePhaseKeys  = PHASES
+    .map(String)
+    .filter((k) => ix.nema_phases?.[k]?.active !== false)
 
   function splitTotal(plan) {
     const splits = ix.timing_plans?.[plan]?.splits || {}
-    return activePhaseKeys.reduce((sum, k) => sum + (Number(splits[k]) || 0), 0)
+    return activePhaseKeys.reduce((s, k) => s + (Number(splits[k]) || 0), 0)
   }
 
-  // Navigate between intersections
   function navigateTo(newIx) {
     setSelectedIntersection(newIx.id)
     setActiveTab('Geometry')
   }
 
+  const pa = ix.phase_assignments || DEFAULT_PHASE_ASSIGNMENTS
+
+  // ── Render ──────────────────────────────────────────────────────────────────
+
   return (
     <div className="max-w-5xl mx-auto p-4">
-      {/* Breadcrumb / Top Bar */}
+
+      {/* Breadcrumb */}
       <div className="flex items-center gap-2 mb-4">
         <button
           onClick={() => setActiveView('corridor')}
@@ -157,16 +251,12 @@ export default function IntersectionEditor() {
         <span className="text-gray-600">/</span>
         <span className="text-white font-medium text-sm">{ix.name}</span>
 
-        {/* Intersection picker */}
         <div className="ml-auto flex items-center gap-2">
           <button
             onClick={() => ixIndex > 0 && navigateTo(intersections[ixIndex - 1])}
             disabled={ixIndex === 0}
             className="btn-ghost text-xs py-1 px-2 disabled:opacity-30"
-            title="Previous intersection"
-          >
-            ← Prev
-          </button>
+          >← Prev</button>
           <select
             className="select-field text-xs py-1 w-48"
             value={ix.id}
@@ -183,10 +273,7 @@ export default function IntersectionEditor() {
             onClick={() => ixIndex < intersections.length - 1 && navigateTo(intersections[ixIndex + 1])}
             disabled={ixIndex === intersections.length - 1}
             className="btn-ghost text-xs py-1 px-2 disabled:opacity-30"
-            title="Next intersection"
-          >
-            Next →
-          </button>
+          >Next →</button>
         </div>
       </div>
 
@@ -196,41 +283,33 @@ export default function IntersectionEditor() {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors duration-150 ${
+            className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
               activeTab === tab
                 ? 'border-blue-500 text-white'
                 : 'border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-600'
             }`}
-          >
-            {tab}
-          </button>
+          >{tab}</button>
         ))}
       </div>
 
-      {/* Tab: Geometry */}
+      {/* ── Tab: Geometry ─────────────────────────────────────────────────── */}
       {activeTab === 'Geometry' && (
         <div className="space-y-4">
-          {/* Intersection type + basic info */}
           <div className="card">
             <h3 className="section-header">Intersection Properties</h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="label block mb-1.5">Intersection Name</label>
                 <input
-                  type="text"
-                  className="input-field"
+                  type="text" className="input-field"
                   value={ix.name}
                   onChange={(e) => update({ name: e.target.value })}
                 />
               </div>
               <div>
                 <label className="label block mb-1.5">Intersection Type</label>
-                <select
-                  className="select-field"
-                  value={ix.type}
-                  onChange={(e) => handleTypeChange(e.target.value)}
-                >
-                  <option value="2-leg">2-leg (Mid-block/Driveway)</option>
+                <select className="select-field" value={ix.type} onChange={(e) => handleTypeChange(e.target.value)}>
+                  <option value="2-leg">2-leg (Mid-block / Driveway)</option>
                   <option value="3-leg">3-leg (T-intersection)</option>
                   <option value="4-leg">4-leg (Full intersection)</option>
                 </select>
@@ -238,59 +317,43 @@ export default function IntersectionEditor() {
               <div>
                 <label className="label block mb-1.5">Distance from Previous (ft)</label>
                 <input
-                  type="number"
-                  className="input-field"
+                  type="number" className="input-field"
                   value={ix.distance_from_prev_ft || 0}
                   onChange={(e) => update({ distance_from_prev_ft: Number(e.target.value) })}
-                  min={0}
-                  step={50}
+                  min={0} step={50}
                 />
               </div>
             </div>
           </div>
 
-          {/* Per-approach lane config */}
           {activeDirections.map((dir) => {
             const approach = getApproach(dir)
             return (
               <div key={dir} className="card">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="section-header mb-0">
-                    {dir} Approach
-                  </h3>
-                  <div className="flex items-center gap-3 text-sm">
+                  <h3 className="section-header mb-0">{dir} Approach</h3>
+                  <div className="flex items-center gap-4 text-sm">
                     <div className="flex items-center gap-2">
                       <label className="label">HV%</label>
                       <input
-                        type="number"
-                        className="input-field text-xs w-16"
+                        type="number" className="input-field text-xs w-16"
                         value={approach.heavy_vehicle_pct ?? 2}
-                        onChange={(e) =>
-                          updateApproach(dir, { heavy_vehicle_pct: Number(e.target.value) })
-                        }
-                        min={0}
-                        max={100}
-                        step={0.5}
+                        onChange={(e) => updateApproach(dir, { heavy_vehicle_pct: Number(e.target.value) })}
+                        min={0} max={100} step={0.5}
                       />
                     </div>
                     <div className="flex items-center gap-2">
                       <label className="label">PHF</label>
                       <input
-                        type="number"
-                        className="input-field text-xs w-16"
+                        type="number" className="input-field text-xs w-16"
                         value={approach.phf ?? 0.95}
-                        onChange={(e) =>
-                          updateApproach(dir, { phf: Number(e.target.value) })
-                        }
-                        min={0.01}
-                        max={1.0}
-                        step={0.01}
+                        onChange={(e) => updateApproach(dir, { phf: Number(e.target.value) })}
+                        min={0.01} max={1.0} step={0.01}
                       />
                     </div>
                   </div>
                 </div>
 
-                {/* Lane table */}
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
@@ -302,37 +365,31 @@ export default function IntersectionEditor() {
                       </tr>
                     </thead>
                     <tbody>
-                      {(approach.lanes || []).map((lane, laneIdx) => (
-                        <tr key={laneIdx} className="border-t border-gray-700">
-                          <td className="px-2 py-1.5 text-gray-500 text-xs">{laneIdx + 1}</td>
+                      {(approach.lanes || []).map((lane, li) => (
+                        <tr key={li} className="border-t border-gray-700">
+                          <td className="px-2 py-1.5 text-gray-500 text-xs">{li + 1}</td>
                           <td className="px-2 py-1.5">
                             <select
                               className="select-field text-xs py-1"
                               value={lane.movement}
-                              onChange={(e) => updateLane(dir, laneIdx, { movement: e.target.value })}
+                              onChange={(e) => updateLane(dir, li, { movement: e.target.value })}
                             >
-                              {MOVEMENTS.map((m) => (
-                                <option key={m} value={m}>{m}</option>
-                              ))}
+                              {MOVEMENTS.map((m) => <option key={m} value={m}>{m}</option>)}
                             </select>
                           </td>
                           <td className="px-2 py-1.5">
                             <input
-                              type="number"
-                              className="input-field text-xs py-1 w-20"
+                              type="number" className="input-field text-xs py-1 w-20"
                               value={lane.width_ft}
-                              onChange={(e) => updateLane(dir, laneIdx, { width_ft: Number(e.target.value) })}
-                              min={9}
-                              max={20}
-                              step={0.5}
+                              onChange={(e) => updateLane(dir, li, { width_ft: Number(e.target.value) })}
+                              min={9} max={20} step={0.5}
                             />
                           </td>
                           <td className="px-2 py-1.5">
                             <button
-                              onClick={() => removeLane(dir, laneIdx)}
+                              onClick={() => removeLane(dir, li)}
                               disabled={(approach.lanes || []).length <= 1}
                               className="text-gray-600 hover:text-red-400 transition-colors disabled:opacity-30"
-                              title="Remove lane"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -354,47 +411,23 @@ export default function IntersectionEditor() {
                   </button>
                 </div>
 
-                {/* Turn bay lengths */}
                 <div className="mt-3 pt-3 border-t border-gray-700/50 flex items-center gap-6">
                   <span className="label">Turn Bay Lengths</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-400">L:</span>
-                    <input
-                      type="number"
-                      className="input-field text-xs py-1 w-20"
-                      value={approach.turn_bay_lengths?.L ?? ''}
-                      onChange={(e) =>
-                        updateApproach(dir, {
-                          turn_bay_lengths: {
-                            ...approach.turn_bay_lengths,
-                            L: e.target.value === '' ? null : Number(e.target.value),
-                          },
-                        })
-                      }
-                      placeholder="—"
-                      min={0}
-                    />
-                    <span className="text-xs text-gray-500">ft</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-400">R:</span>
-                    <input
-                      type="number"
-                      className="input-field text-xs py-1 w-20"
-                      value={approach.turn_bay_lengths?.R ?? ''}
-                      onChange={(e) =>
-                        updateApproach(dir, {
-                          turn_bay_lengths: {
-                            ...approach.turn_bay_lengths,
-                            R: e.target.value === '' ? null : Number(e.target.value),
-                          },
-                        })
-                      }
-                      placeholder="—"
-                      min={0}
-                    />
-                    <span className="text-xs text-gray-500">ft</span>
-                  </div>
+                  {['L', 'R'].map((mv) => (
+                    <div key={mv} className="flex items-center gap-2">
+                      <span className="text-xs text-gray-400">{mv}:</span>
+                      <input
+                        type="number"
+                        className="input-field text-xs py-1 w-20"
+                        value={approach.turn_bay_lengths?.[mv] ?? ''}
+                        onChange={(e) => updateApproach(dir, {
+                          turn_bay_lengths: { ...approach.turn_bay_lengths, [mv]: e.target.value === '' ? null : Number(e.target.value) },
+                        })}
+                        placeholder="—" min={0}
+                      />
+                      <span className="text-xs text-gray-500">ft</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             )
@@ -402,19 +435,76 @@ export default function IntersectionEditor() {
         </div>
       )}
 
-      {/* Tab: Phasing */}
+      {/* ── Tab: Phasing ──────────────────────────────────────────────────── */}
       {activeTab === 'Phasing' && (
         <div className="space-y-4">
-          {/* NEMA Diagram */}
+
+          {/* 1. Ring-barrier diagram */}
           <div className="card">
             <h3 className="section-header">NEMA Ring-Barrier Structure</h3>
             <NEMADiagram phases={ix.nema_phases || {}} />
             <p className="text-xs text-gray-500 mt-2">
-              Click phase boxes below to toggle active state. The diagram updates in real time.
+              Ring 1: φ1–φ2 (first barrier) · φ5–φ6 (second barrier) &nbsp;|&nbsp;
+              Ring 2: φ3–φ4 (first barrier) · φ7–φ8 (second barrier)
             </p>
           </div>
 
-          {/* Phase parameters table */}
+          {/* 2. Direction-to-phase assignment */}
+          <div className="card">
+            <h3 className="section-header">Phase Sequence — Direction Assignment</h3>
+            <p className="text-xs text-gray-500 mb-3">
+              Map each approach direction's movements to NEMA phase numbers.
+              Changes are reflected in the simulation engine.
+            </p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr>
+                    <th className="text-left px-3 py-2 text-xs text-gray-500 uppercase tracking-wider">Direction</th>
+                    <th className="px-3 py-2 text-xs text-gray-500 uppercase tracking-wider text-center">Left Turn Phase</th>
+                    <th className="px-3 py-2 text-xs text-gray-500 uppercase tracking-wider text-center">Through Phase</th>
+                    <th className="px-3 py-2 text-xs text-gray-500 uppercase tracking-wider text-center">Right Turn Phase</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activeDirections.map((dir) => {
+                    const dirPa = pa[dir] || DEFAULT_PHASE_ASSIGNMENTS[dir] || {}
+                    const activePhNums = PHASES.filter((n) => ix.nema_phases?.[String(n)]?.active !== false)
+                    return (
+                      <tr key={dir} className="border-t border-gray-700">
+                        <td className="px-3 py-2.5">
+                          <span className="font-semibold text-gray-200">{dir}</span>
+                        </td>
+                        {(['L', 'T', 'R']).map((mv) => (
+                          <td key={mv} className="px-3 py-2.5 text-center">
+                            <select
+                              className="select-field text-xs py-1 w-20 mx-auto"
+                              value={dirPa[mv] ?? ''}
+                              onChange={(e) => updatePhaseAssignment(dir, mv, e.target.value)}
+                            >
+                              {activePhNums.map((n) => (
+                                <option key={n} value={n}>φ{n}</option>
+                              ))}
+                            </select>
+                          </td>
+                        ))}
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <div className="mt-3 flex items-center gap-2">
+              <button
+                className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+                onClick={() => update({ phase_assignments: JSON.parse(JSON.stringify(DEFAULT_PHASE_ASSIGNMENTS)) })}
+              >
+                Reset to NEMA standard defaults
+              </button>
+            </div>
+          </div>
+
+          {/* 3. Phase parameters */}
           <div className="card">
             <h3 className="section-header">Phase Parameters</h3>
             <div className="overflow-x-auto">
@@ -423,26 +513,31 @@ export default function IntersectionEditor() {
                   <tr>
                     <th className="text-left px-2 py-2 text-xs text-gray-500 uppercase tracking-wider">Phase</th>
                     <th className="px-2 py-2 text-xs text-gray-500 uppercase tracking-wider text-center">Active</th>
-                    <th className="px-2 py-2 text-xs text-gray-500 uppercase tracking-wider text-center">Min Green</th>
-                    <th className="px-2 py-2 text-xs text-gray-500 uppercase tracking-wider text-center">Max Green</th>
-                    <th className="px-2 py-2 text-xs text-gray-500 uppercase tracking-wider text-center">Yellow</th>
-                    <th className="px-2 py-2 text-xs text-gray-500 uppercase tracking-wider text-center">All-Red</th>
+                    <th className="px-2 py-2 text-xs text-gray-500 uppercase tracking-wider text-center">Min Green (s)</th>
+                    <th className="px-2 py-2 text-xs text-gray-500 uppercase tracking-wider text-center">Max Green (s)</th>
+                    <th className="px-2 py-2 text-xs text-gray-500 uppercase tracking-wider text-center">Yellow (s)</th>
+                    <th className="px-2 py-2 text-xs text-gray-500 uppercase tracking-wider text-center">All-Red (s)</th>
                     <th className="px-2 py-2 text-xs text-gray-500 uppercase tracking-wider text-center">Recall</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {[1,2,3,4,5,6,7,8].map((num) => {
+                  {PHASES.map((num) => {
                     const key = String(num)
                     const phase = ix.nema_phases?.[key] || {}
                     const isActive = phase.active !== false
+                    // Which directions use this phase?
+                    const dirLabels = activeDirections.filter((dir) =>
+                      Object.values(pa[dir] || {}).includes(num)
+                    )
                     return (
                       <tr key={key} className={`border-t border-gray-700 ${!isActive ? 'opacity-40' : ''}`}>
                         <td className="px-2 py-2">
-                          <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${
-                            isActive ? 'bg-blue-900 text-blue-300 border border-blue-700' : 'bg-gray-800 text-gray-600 border border-gray-700'
-                          }`}>
-                            {num}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <PhaseBadge num={num} active={isActive} />
+                            {dirLabels.length > 0 && (
+                              <span className="text-xs text-gray-500">{dirLabels.join(', ')}</span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-2 py-2 text-center">
                           <input
@@ -452,7 +547,7 @@ export default function IntersectionEditor() {
                             className="w-4 h-4 rounded accent-blue-500"
                           />
                         </td>
-                        {['min_green', 'max_green', 'yellow', 'all_red'].map((field) => (
+                        {[['min_green', 5, 120], ['max_green', 5, 200], ['yellow', 1, 10], ['all_red', 0, 10]].map(([field, min, max]) => (
                           <td key={field} className="px-2 py-2 text-center">
                             <input
                               type="number"
@@ -460,9 +555,7 @@ export default function IntersectionEditor() {
                               value={phase[field] ?? 0}
                               disabled={!isActive}
                               onChange={(e) => updatePhase(key, { [field]: Number(e.target.value) })}
-                              min={0}
-                              max={field === 'yellow' || field === 'all_red' ? 10 : 200}
-                              step={1}
+                              min={min} max={max} step={1}
                             />
                           </td>
                         ))}
@@ -473,9 +566,7 @@ export default function IntersectionEditor() {
                             disabled={!isActive}
                             onChange={(e) => updatePhase(key, { recall: e.target.value })}
                           >
-                            {RECALL_MODES.map((m) => (
-                              <option key={m} value={m}>{m}</option>
-                            ))}
+                            {RECALL_MODES.map((m) => <option key={m} value={m}>{m}</option>)}
                           </select>
                         </td>
                       </tr>
@@ -486,110 +577,284 @@ export default function IntersectionEditor() {
             </div>
           </div>
 
-          {/* Overlaps */}
+          {/* 4. Overlap phases */}
           <div className="card">
-            <h3 className="section-header">Overlap Phases</h3>
-            <p className="text-xs text-gray-500">
-              Define overlap phases (NEMA standard overlaps A–D or custom).
-              Overlap configuration is optional for Phase 1.
-            </p>
-            <div className="mt-3 space-y-2">
-              {(ix.overlaps || []).length === 0 && (
-                <p className="text-gray-600 text-xs italic">No overlap phases defined.</p>
-              )}
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="section-header mb-0">Overlap Phases</h3>
+              <button onClick={addOverlap} className="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Add Overlap
+              </button>
             </div>
+            <p className="text-xs text-gray-500 mb-3">
+              NEMA standard overlaps (A–D) or custom. An overlap runs concurrent with all selected phases.
+            </p>
+
+            {(ix.overlaps || []).length === 0 ? (
+              <p className="text-gray-600 text-xs italic py-2">No overlap phases defined.</p>
+            ) : (
+              <div className="space-y-3">
+                {(ix.overlaps || []).map((ov, idx) => (
+                  <div key={idx} className="flex items-start gap-4 p-3 bg-gray-900/50 rounded-lg border border-gray-700">
+                    <div className="flex items-center gap-2 shrink-0">
+                      <label className="label text-xs">Label</label>
+                      <input
+                        type="text"
+                        className="input-field text-xs py-1 w-14 text-center font-semibold"
+                        value={ov.label}
+                        maxLength={4}
+                        onChange={(e) => updateOverlap(idx, { label: e.target.value.toUpperCase() })}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <div className="label text-xs mb-2">Runs concurrent with phases:</div>
+                      <div className="flex flex-wrap gap-2">
+                        {PHASES.filter((n) => ix.nema_phases?.[String(n)]?.active !== false).map((n) => {
+                          const selected = (ov.phases || []).includes(n)
+                          return (
+                            <button
+                              key={n}
+                              onClick={() => toggleOverlapPhase(idx, n)}
+                              className={`w-8 h-8 rounded-full text-xs font-bold border transition-colors ${
+                                selected
+                                  ? 'bg-blue-600 border-blue-500 text-white'
+                                  : 'bg-gray-800 border-gray-600 text-gray-400 hover:border-gray-400'
+                              }`}
+                            >{n}</button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => removeOverlap(idx)}
+                      className="text-gray-600 hover:text-red-400 transition-colors mt-1 shrink-0"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 5. Pedestrian phases */}
+          <div className="card">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="section-header mb-0">Pedestrian Phases</h3>
+              <button onClick={addPedPhase} className="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Add Ped Phase
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mb-3">
+              Pedestrian phases associated with a NEMA phase number. Walk + Ped clearance times in seconds.
+            </p>
+
+            {(ix.ped_phases || []).length === 0 ? (
+              <p className="text-gray-600 text-xs italic py-2">No pedestrian phases defined.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr>
+                      <th className="text-left px-3 py-2 text-xs text-gray-500 uppercase tracking-wider">Assoc. Phase</th>
+                      <th className="px-3 py-2 text-xs text-gray-500 uppercase tracking-wider text-center">Walk (s)</th>
+                      <th className="px-3 py-2 text-xs text-gray-500 uppercase tracking-wider text-center">Ped Clearance (s)</th>
+                      <th className="px-3 py-2 text-xs text-gray-500 uppercase tracking-wider text-center">Total (s)</th>
+                      <th className="w-10" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(ix.ped_phases || []).map((pp, idx) => (
+                      <tr key={idx} className="border-t border-gray-700">
+                        <td className="px-3 py-2">
+                          <select
+                            className="select-field text-xs py-1 w-20"
+                            value={pp.phase}
+                            onChange={(e) => updatePedPhase(idx, { phase: Number(e.target.value) })}
+                          >
+                            {PHASES.filter((n) => ix.nema_phases?.[String(n)]?.active !== false)
+                              .map((n) => <option key={n} value={n}>φ{n}</option>)}
+                          </select>
+                        </td>
+                        <td className="px-3 py-2 text-center">
+                          <input
+                            type="number"
+                            className="input-field text-xs py-1 w-16 text-center mx-auto"
+                            value={pp.walk_s}
+                            onChange={(e) => updatePedPhase(idx, { walk_s: Number(e.target.value) })}
+                            min={1} max={60} step={1}
+                          />
+                        </td>
+                        <td className="px-3 py-2 text-center">
+                          <input
+                            type="number"
+                            className="input-field text-xs py-1 w-16 text-center mx-auto"
+                            value={pp.ped_clearance_s}
+                            onChange={(e) => updatePedPhase(idx, { ped_clearance_s: Number(e.target.value) })}
+                            min={1} max={90} step={1}
+                          />
+                        </td>
+                        <td className="px-3 py-2 text-center text-gray-400 text-xs">
+                          {(pp.walk_s || 0) + (pp.ped_clearance_s || 0)}s
+                        </td>
+                        <td className="px-3 py-2 text-center">
+                          <button
+                            onClick={() => removePedPhase(idx)}
+                            className="text-gray-600 hover:text-red-400 transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* Tab: Timing */}
+      {/* ── Tab: Timing ───────────────────────────────────────────────────── */}
       {activeTab === 'Timing' && (
         <div className="space-y-4">
+
           {/* Plan sub-tabs */}
-          <div className="flex gap-1 bg-gray-900 rounded-lg p-1 w-fit">
-            {PLANS.map((plan) => (
-              <button
-                key={plan}
-                onClick={() => setTimingPlan(plan)}
-                className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-colors duration-150 ${
-                  timingPlan === plan ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-gray-200'
-                }`}
-              >
-                {plan}
-              </button>
-            ))}
+          <div className="flex items-center gap-3">
+            <div className="flex gap-1 bg-gray-900 rounded-lg p-1">
+              {PLANS.map((plan) => (
+                <button
+                  key={plan}
+                  onClick={() => setTimingPlan(plan)}
+                  className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+                    timingPlan === plan ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-gray-200'
+                  }`}
+                >{plan}</button>
+              ))}
+            </div>
+            {/* Copy from another plan */}
+            <div className="ml-auto flex items-center gap-2 text-xs text-gray-500">
+              <span>Copy from:</span>
+              {PLANS.filter((p) => p !== timingPlan).map((src) => (
+                <button
+                  key={src}
+                  onClick={() => copyPlan(src, timingPlan)}
+                  className="btn-secondary text-xs px-2 py-1"
+                  title={`Copy cycle, offset, and splits from ${src} into ${timingPlan}`}
+                >{src}</button>
+              ))}
+            </div>
           </div>
 
-          {/* Plan settings */}
+          {/* Cycle + Offset */}
           <div className="card">
-            <div className="flex items-center gap-6 mb-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
               <div>
                 <label className="label block mb-1.5">Cycle Length (s)</label>
                 <input
-                  type="number"
-                  className="input-field w-28"
+                  type="number" className="input-field"
                   value={ix.timing_plans?.[timingPlan]?.cycle || 120}
                   onChange={(e) => updateTiming(timingPlan, { cycle: Number(e.target.value) })}
-                  min={30}
-                  max={300}
-                  step={5}
+                  min={30} max={300} step={5}
                 />
+                <p className="text-xs text-gray-600 mt-1">Range: 60–200 s (spec)</p>
               </div>
               <div>
                 <label className="label block mb-1.5">Offset (s)</label>
                 <input
-                  type="number"
-                  className="input-field w-28"
-                  value={ix.timing_plans?.[timingPlan]?.offset || 0}
+                  type="number" className="input-field"
+                  value={ix.timing_plans?.[timingPlan]?.offset ?? 0}
                   onChange={(e) => updateTiming(timingPlan, { offset: Number(e.target.value) })}
-                  min={0}
-                  max={300}
-                  step={1}
+                  min={0} max={300} step={1}
                 />
+                <p className="text-xs text-gray-600 mt-1">0 to cycle length</p>
               </div>
             </div>
 
             {/* Splits table */}
-            <h4 className="label mb-2">Phase Splits</h4>
+            <h4 className="label mb-3">Phase Splits</h4>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr>
                     <th className="text-left px-2 py-2 text-xs text-gray-500 uppercase tracking-wider">Phase</th>
-                    <th className="text-left px-2 py-2 text-xs text-gray-500 uppercase tracking-wider">Split (s)</th>
-                    <th className="text-left px-2 py-2 text-xs text-gray-500 uppercase tracking-wider">Effective Green (s)</th>
-                    <th className="text-left px-2 py-2 text-xs text-gray-500 uppercase tracking-wider">% of Cycle</th>
+                    <th className="px-2 py-2 text-xs text-gray-500 uppercase tracking-wider text-center">Split (s)</th>
+                    <th className="px-2 py-2 text-xs text-gray-500 uppercase tracking-wider text-center">Min Green (s)</th>
+                    <th className="px-2 py-2 text-xs text-gray-500 uppercase tracking-wider text-center">Max Green (s)</th>
+                    <th className="px-2 py-2 text-xs text-gray-500 uppercase tracking-wider text-center">Eff Green (s)</th>
+                    <th className="px-2 py-2 text-xs text-gray-500 uppercase tracking-wider text-center">% Cycle</th>
+                    <th className="px-2 py-2 text-xs text-gray-500 uppercase tracking-wider">Green Time</th>
                   </tr>
                 </thead>
                 <tbody>
                   {activePhaseKeys.map((key) => {
-                    const split = ix.timing_plans?.[timingPlan]?.splits?.[key] || 0
-                    const phase = ix.nema_phases?.[key] || {}
-                    const yellow = phase.yellow || 4
-                    const allRed = phase.all_red || 1
-                    const effGreen = Math.max(0, split - yellow - allRed)
-                    const cycle = ix.timing_plans?.[timingPlan]?.cycle || 120
-                    const pct = cycle > 0 ? ((split / cycle) * 100).toFixed(1) : '0.0'
+                    const split    = Number(ix.timing_plans?.[timingPlan]?.splits?.[key] || 0)
+                    const phase    = ix.nema_phases?.[key] || {}
+                    const yellow   = phase.yellow   ?? 4
+                    const allRed   = phase.all_red  ?? 1
+                    const minG     = phase.min_green ?? 5
+                    const maxG     = phase.max_green ?? 30
+                    const effG     = Math.max(0, split - yellow - allRed)
+                    const cycle    = ix.timing_plans?.[timingPlan]?.cycle || 120
+                    const pct      = cycle > 0 ? ((split / cycle) * 100).toFixed(1) : '0.0'
+                    const minViol  = split > 0 && effG < minG
+                    const maxViol  = split > 0 && effG > maxG
                     return (
                       <tr key={key} className="border-t border-gray-700">
-                        <td className="px-2 py-2">
-                          <span className="inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold bg-blue-900 text-blue-300 border border-blue-700">
-                            {key}
-                          </span>
+                        <td className="px-2 py-2.5">
+                          <div className="flex items-center gap-2">
+                            <PhaseBadge num={key} />
+                          </div>
                         </td>
-                        <td className="px-2 py-2">
+                        <td className="px-2 py-2.5 text-center">
                           <input
                             type="number"
-                            className="input-field text-xs py-1 w-20"
+                            className="input-field text-xs py-1 w-20 text-center mx-auto"
                             value={split}
                             onChange={(e) => updateSplit(timingPlan, key, e.target.value)}
                             min={0}
-                            max={ix.timing_plans?.[timingPlan]?.cycle || 300}
+                            max={cycle}
                             step={1}
                           />
                         </td>
-                        <td className="px-2 py-2 text-gray-400 text-xs">{effGreen}s</td>
-                        <td className="px-2 py-2 text-gray-400 text-xs">{pct}%</td>
+                        <td className="px-2 py-2.5 text-center">
+                          <input
+                            type="number"
+                            className="input-field text-xs py-1 w-16 text-center mx-auto"
+                            value={minG}
+                            onChange={(e) => updatePhase(key, { min_green: Number(e.target.value) })}
+                            min={1} max={120} step={1}
+                          />
+                        </td>
+                        <td className="px-2 py-2.5 text-center">
+                          <input
+                            type="number"
+                            className="input-field text-xs py-1 w-16 text-center mx-auto"
+                            value={maxG}
+                            onChange={(e) => updatePhase(key, { max_green: Number(e.target.value) })}
+                            min={1} max={200} step={1}
+                          />
+                        </td>
+                        <td className={`px-2 py-2.5 text-center text-xs font-mono ${
+                          minViol ? 'text-orange-400' : maxViol ? 'text-amber-400' : 'text-gray-300'
+                        }`}>
+                          {effG}s
+                          {minViol && <span className="ml-1 text-orange-400" title="Below min green">↓</span>}
+                          {maxViol && <span className="ml-1 text-amber-400" title="Exceeds max green">↑</span>}
+                        </td>
+                        <td className="px-2 py-2.5 text-center text-gray-400 text-xs">{pct}%</td>
+                        <td className="px-2 py-2.5">
+                          <GreenBar split={split} yellow={yellow} allRed={allRed} cycle={cycle} />
+                        </td>
                       </tr>
                     )
                   })}
@@ -597,37 +862,53 @@ export default function IntersectionEditor() {
               </table>
             </div>
 
-            {/* Running total validation */}
+            {/* Running total */}
             {(() => {
               const total = splitTotal(timingPlan)
               const cycle = ix.timing_plans?.[timingPlan]?.cycle || 120
-              const diff = total - cycle
-              const isValid = Math.abs(diff) < 1
+              const diff  = total - cycle
+              const valid = Math.abs(diff) < 1
               return (
-                <div className={`mt-3 flex items-center gap-2 text-sm px-3 py-2 rounded-lg ${
-                  isValid ? 'bg-green-900/30 text-green-300' : 'bg-red-900/30 text-red-300'
+                <div className={`mt-4 flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm ${
+                  valid ? 'bg-green-900/30 text-green-300' : 'bg-red-900/30 text-red-300'
                 }`}>
-                  <span className={`w-2 h-2 rounded-full ${isValid ? 'bg-green-400' : 'bg-red-400'}`} />
-                  Splits total: {total}s / {cycle}s cycle
-                  {!isValid && (
+                  <span className={`w-2 h-2 rounded-full ${valid ? 'bg-green-400' : 'bg-red-400'}`} />
+                  Splits total: <strong>{total}s</strong> / {cycle}s cycle
+                  {!valid && (
                     <span className="ml-2 font-medium">
                       ({diff > 0 ? '+' : ''}{diff}s {diff > 0 ? 'over' : 'short'})
                     </span>
                   )}
-                  {isValid && <span className="ml-1 font-medium">✓ Valid</span>}
+                  {valid && <span className="ml-1 font-medium">✓ Valid</span>}
                 </div>
               )
             })()}
+
+            {/* Green time legend */}
+            <div className="mt-3 flex items-center gap-4 text-xs text-gray-500">
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-3 rounded bg-green-600" /> Eff. green
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-3 rounded bg-yellow-500" /> Yellow
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-3 rounded bg-red-800" /> All-red
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-3 rounded bg-gray-800 border border-gray-700" /> Unused
+              </div>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Tab: Detectors */}
+      {/* ── Tab: Detectors ────────────────────────────────────────────────── */}
       {activeTab === 'Detectors' && (
         <div className="card">
           <h3 className="section-header">Detector Configuration</h3>
           <p className="text-xs text-gray-500 mb-4">
-            Configure stop bar and advance detectors for each approach.
+            Stop bar and advance detectors per approach. Channel assignments imported from NTCIP are visible in the NTCIP Import tab.
           </p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -635,13 +916,20 @@ export default function IntersectionEditor() {
                 <tr>
                   <th className="text-left px-3 py-2 text-xs text-gray-500 uppercase tracking-wider">Approach</th>
                   <th className="px-3 py-2 text-xs text-gray-500 uppercase tracking-wider text-center">Stop Bar</th>
-                  <th className="px-3 py-2 text-xs text-gray-500 uppercase tracking-wider text-center">Advance Detector</th>
+                  <th className="px-3 py-2 text-xs text-gray-500 uppercase tracking-wider text-center">Advance</th>
+                  <th className="text-left px-3 py-2 text-xs text-gray-500 uppercase tracking-wider">NTCIP Channels</th>
                 </tr>
               </thead>
               <tbody>
                 {activeDirections.map((dir) => {
                   const approach = getApproach(dir)
                   const det = approach.detector || {}
+                  const ntcipChans = (ix.detectors || [])
+                    .filter((d) => {
+                      // match channels whose phase is in this approach's phases
+                      const apPhases = Object.values(pa[dir] || {})
+                      return apPhases.includes(d.phase)
+                    })
                   return (
                     <tr key={dir} className="border-t border-gray-700">
                       <td className="px-3 py-3">
@@ -666,6 +954,11 @@ export default function IntersectionEditor() {
                           className="w-4 h-4 rounded accent-blue-500"
                         />
                       </td>
+                      <td className="px-3 py-3 text-xs text-gray-500">
+                        {ntcipChans.length > 0
+                          ? ntcipChans.map((d) => `${d.channel} (${d.type === 'advance' ? 'Adv' : 'SB'})`).join(', ')
+                          : <span className="italic">—</span>}
+                      </td>
                     </tr>
                   )
                 })}
@@ -675,26 +968,20 @@ export default function IntersectionEditor() {
         </div>
       )}
 
-      {/* Tab: NTCIP Import */}
+      {/* ── Tab: NTCIP Import ─────────────────────────────────────────────── */}
       {activeTab === 'NTCIP Import' && (
         <NTCIPImportTab intersection={ix} onApply={update} />
       )}
 
-      {/* Bottom Navigation */}
+      {/* Bottom navigation */}
       <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-700">
-        <button
-          onClick={() => setActiveView('corridor')}
-          className="btn-secondary flex items-center gap-2"
-        >
+        <button onClick={() => setActiveView('corridor')} className="btn-secondary flex items-center gap-2">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
           Back to Corridor
         </button>
-        <button
-          onClick={() => setActiveView('demand')}
-          className="btn-primary flex items-center gap-2"
-        >
+        <button onClick={() => setActiveView('demand')} className="btn-primary flex items-center gap-2">
           Next: Demand Input
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -705,9 +992,7 @@ export default function IntersectionEditor() {
   )
 }
 
-// ---------------------------------------------------------------------------
-// NTCIP Import Tab
-// ---------------------------------------------------------------------------
+// ── NTCIP Import Tab ─────────────────────────────────────────────────────────
 
 function NTCIPImportTab({ intersection, onApply }) {
   const { currentProject } = useProjectStore()
@@ -715,7 +1000,7 @@ function NTCIPImportTab({ intersection, onApply }) {
   const [isDragging, setIsDragging] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadError, setUploadError] = useState(null)
-  const [result, setResult] = useState(null)  // {format, log, mapped}
+  const [result, setResult] = useState(null)
   const [applied, setApplied] = useState(false)
   const [applyScope, setApplyScope] = useState({ phases: true, timing: true, overlaps: true, detectors: true })
 
@@ -741,25 +1026,15 @@ function NTCIPImportTab({ intersection, onApply }) {
     }
   }
 
-  function handleFileInput(e) {
-    uploadFile(e.target.files?.[0])
-    e.target.value = ''
-  }
-
-  function handleDrop(e) {
-    e.preventDefault()
-    setIsDragging(false)
-    uploadFile(e.dataTransfer.files?.[0])
-  }
+  function handleFileInput(e) { uploadFile(e.target.files?.[0]); e.target.value = '' }
+  function handleDrop(e) { e.preventDefault(); setIsDragging(false); uploadFile(e.dataTransfer.files?.[0]) }
 
   function handleApply() {
     if (!result?.mapped) return
     const patch = {}
     if (applyScope.phases) patch.nema_phases = result.mapped.nema_phases
-    if (applyScope.timing && Object.keys(result.mapped.timing_plans).length > 0) {
-      // Merge imported plans into existing plans (don't overwrite plans not in file)
+    if (applyScope.timing && Object.keys(result.mapped.timing_plans).length > 0)
       patch.timing_plans = { ...intersection.timing_plans, ...result.mapped.timing_plans }
-    }
     if (applyScope.overlaps) patch.overlaps = result.mapped.overlaps
     if (applyScope.detectors) patch.detectors = result.mapped.detectors
     onApply(patch)
@@ -767,8 +1042,8 @@ function NTCIPImportTab({ intersection, onApply }) {
   }
 
   const logCounts = result ? {
-    info: result.log.filter((l) => l.level === 'info').length,
-    warn: result.log.filter((l) => l.level === 'warn').length,
+    info:  result.log.filter((l) => l.level === 'info').length,
+    warn:  result.log.filter((l) => l.level === 'warn').length,
     error: result.log.filter((l) => l.level === 'error').length,
   } : null
 
@@ -779,15 +1054,11 @@ function NTCIPImportTab({ intersection, onApply }) {
 
   return (
     <div className="space-y-4">
-      {/* Header + sample download */}
       <div className="card">
         <div className="flex items-center justify-between mb-3">
           <h3 className="section-header mb-0">NTCIP Controller Database Import</h3>
-          <a
-            href="/api/ntcip/sample-csv"
-            download="ntcip_sample.csv"
-            className="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1.5"
-          >
+          <a href="/api/ntcip/sample-csv" download="ntcip_sample.csv"
+            className="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1.5">
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
@@ -796,10 +1067,8 @@ function NTCIPImportTab({ intersection, onApply }) {
         </div>
         <p className="text-gray-400 text-xs mb-4">
           Supports Econolite ASC/3, Intelight, and Generic NTCIP CSV exports.
-          Download the sample CSV to see the expected format.
         </p>
 
-        {/* Drop zone */}
         <div
           onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
           onDragLeave={() => setIsDragging(false)}
@@ -836,7 +1105,6 @@ function NTCIPImportTab({ intersection, onApply }) {
         )}
       </div>
 
-      {/* Import log */}
       {result && (
         <div className="card">
           <div className="flex items-center gap-3 mb-3">
@@ -857,13 +1125,10 @@ function NTCIPImportTab({ intersection, onApply }) {
             {result.log.map((entry, i) => (
               <div key={i} className={`flex gap-2 px-2 py-1 rounded ${
                 entry.level === 'error' ? 'bg-red-900/30 text-red-300' :
-                entry.level === 'warn'  ? 'bg-yellow-900/20 text-yellow-400' :
-                'text-gray-400'
+                entry.level === 'warn'  ? 'bg-yellow-900/20 text-yellow-400' : 'text-gray-400'
               }`}>
                 <span className={`shrink-0 ${
-                  entry.level === 'error' ? 'text-red-500' :
-                  entry.level === 'warn'  ? 'text-yellow-500' :
-                  'text-blue-500'
+                  entry.level === 'error' ? 'text-red-500' : entry.level === 'warn' ? 'text-yellow-500' : 'text-blue-500'
                 }`}>
                   {entry.level === 'error' ? '✗' : entry.level === 'warn' ? '⚠' : '✓'}
                 </span>
@@ -874,23 +1139,18 @@ function NTCIPImportTab({ intersection, onApply }) {
         </div>
       )}
 
-      {/* Parsed preview + apply */}
       {result && hasData && (
         <div className="card">
           <h3 className="section-header">Review & Apply</h3>
-
-          {/* Scope checkboxes */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
             {[
-              { key: 'phases', label: 'Phase Parameters', count: Object.keys(result.mapped.nema_phases || {}).length },
-              { key: 'timing', label: 'Timing Plans', count: Object.keys(result.mapped.timing_plans || {}).length },
-              { key: 'overlaps', label: 'Overlaps', count: (result.mapped.overlaps || []).length },
-              { key: 'detectors', label: 'Detectors', count: (result.mapped.detectors || []).length },
+              { key: 'phases',    label: 'Phase Parameters', count: Object.keys(result.mapped.nema_phases || {}).length },
+              { key: 'timing',    label: 'Timing Plans',     count: Object.keys(result.mapped.timing_plans || {}).length },
+              { key: 'overlaps',  label: 'Overlaps',         count: (result.mapped.overlaps || []).length },
+              { key: 'detectors', label: 'Detectors',        count: (result.mapped.detectors || []).length },
             ].map(({ key, label, count }) => (
               <label key={key} className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${
-                applyScope[key]
-                  ? 'bg-blue-900/30 border-blue-700 text-blue-200'
-                  : 'bg-gray-800 border-gray-700 text-gray-500'
+                applyScope[key] ? 'bg-blue-900/30 border-blue-700 text-blue-200' : 'bg-gray-800 border-gray-700 text-gray-500'
               }`}>
                 <input
                   type="checkbox"
@@ -906,7 +1166,6 @@ function NTCIPImportTab({ intersection, onApply }) {
             ))}
           </div>
 
-          {/* Quick preview table */}
           {Object.keys(result.mapped.timing_plans || {}).length > 0 && (
             <div className="mb-4">
               <div className="text-xs text-gray-500 mb-2">Timing plans to import:</div>
@@ -928,7 +1187,7 @@ function NTCIPImportTab({ intersection, onApply }) {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              Applied successfully. Review the Phasing and Timing tabs to verify.
+              Applied. Review the Phasing and Timing tabs to verify.
             </div>
           ) : (
             <button onClick={handleApply} className="btn-primary flex items-center gap-2">
@@ -941,10 +1200,9 @@ function NTCIPImportTab({ intersection, onApply }) {
         </div>
       )}
 
-      {result && !hasData && logCounts.error === 0 && (
+      {result && !hasData && logCounts?.error === 0 && (
         <div className="card text-center py-6 text-gray-500 text-sm">
-          No mappable data found. Check that your file matches the Generic NTCIP CSV format
-          or is an Econolite / Intelight export.
+          No mappable data found. Check the file format or download the sample CSV.
         </div>
       )}
     </div>
