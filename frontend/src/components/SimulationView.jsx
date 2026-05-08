@@ -1,5 +1,6 @@
-import React from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import useProjectStore from '../store/projectStore'
+import SimulationCanvas from './SimulationCanvas'
 
 const LOS_COLORS = {
   A: 'text-green-400',
@@ -8,15 +9,6 @@ const LOS_COLORS = {
   D: 'text-yellow-500',
   E: 'text-orange-400',
   F: 'text-red-400',
-}
-
-const LOS_BG = {
-  A: 'bg-green-900/40 border-green-700 text-green-300',
-  B: 'bg-green-900/30 border-green-800 text-green-400',
-  C: 'bg-yellow-900/40 border-yellow-700 text-yellow-300',
-  D: 'bg-yellow-900/50 border-yellow-600 text-yellow-300',
-  E: 'bg-orange-900/40 border-orange-700 text-orange-300',
-  F: 'bg-red-900/40 border-red-700 text-red-300',
 }
 
 export default function SimulationView() {
@@ -29,26 +21,68 @@ export default function SimulationView() {
     runSimulation,
   } = useProjectStore()
 
-  if (!currentProject) return null
+  const intersections = currentProject?.intersections || []
+  const results = currentProject?.simulation_results
 
-  const intersections = currentProject.intersections || []
-  const results = currentProject.simulation_results
+  // playback state
+  const [selectedIxIdx, setSelectedIxIdx] = useState(0)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [simT, setSimT] = useState(0)
+  const [speed, setSpeed] = useState(1)
+  const rafRef = useRef(null)
+  const lastTsRef = useRef(null)
+
+  const plan = intersections[selectedIxIdx]?.timing_plans?.[activePlan]
+  const cycle = plan?.cycle ?? 120
+  const totalT = cycle * 3
+
+  const tick = useCallback((ts) => {
+    if (lastTsRef.current == null) lastTsRef.current = ts
+    const dt = ((ts - lastTsRef.current) / 1000) * speed
+    lastTsRef.current = ts
+    setSimT((t) => {
+      const next = t + dt
+      return next >= totalT ? next % totalT : next
+    })
+    rafRef.current = requestAnimationFrame(tick)
+  }, [speed, totalT])
+
+  useEffect(() => {
+    if (isPlaying) {
+      lastTsRef.current = null
+      rafRef.current = requestAnimationFrame(tick)
+    } else {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    }
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current) }
+  }, [isPlaying, tick])
+
+  // reset sim time when intersection or plan changes
+  useEffect(() => {
+    setSimT(0)
+    setIsPlaying(false)
+  }, [selectedIxIdx, activePlan])
+
+  if (!currentProject) return null
 
   async function handleRun() {
     try {
       await runSimulation()
       setActiveView('results')
     } catch {
-      // error is stored in store
+      // error stored in store
     }
   }
 
-  const readyCount = intersections.filter((ix) => {
-    return (ix.approaches || []).length > 0 && !!ix.timing_plans?.[activePlan]
-  }).length
+  const readyCount = intersections.filter(
+    (ix) => (ix.approaches || []).length > 0 && !!ix.timing_plans?.[activePlan]
+  ).length
+
+  const selectedIx = intersections[selectedIxIdx]
+  const tmod = totalT > 0 ? ((simT % totalT) + totalT) % totalT : 0
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-5xl mx-auto p-6">
       <div className="mb-6">
         <h2 className="text-xl font-bold text-white">Simulation</h2>
         <p className="text-gray-400 text-sm mt-1">
@@ -76,6 +110,141 @@ export default function SimulationView() {
           </div>
         </div>
       </div>
+
+      {/* 2D Visual Simulation */}
+      {intersections.length > 0 && (
+        <div className="card mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="section-header mb-0">Visual Simulation</h3>
+            <div className="flex items-center gap-2">
+              <label className="label text-xs">Intersection:</label>
+              <select
+                className="select-field text-sm py-1"
+                value={selectedIxIdx}
+                onChange={(e) => setSelectedIxIdx(Number(e.target.value))}
+              >
+                {intersections.map((ix, i) => (
+                  <option key={ix.id} value={i}>{ix.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Canvas */}
+          <div className="flex justify-center mb-4 overflow-auto">
+            {selectedIx && (
+              <SimulationCanvas
+                intersection={selectedIx}
+                activePlan={activePlan}
+                simT={tmod}
+              />
+            )}
+          </div>
+
+          {/* Phase state legend */}
+          {selectedIx && plan && (
+            <div className="flex flex-wrap gap-3 mb-4 justify-center text-xs">
+              {Object.entries(selectedIx.nema_phases ?? {})
+                .filter(([, ph]) => ph.active)
+                .map(([num]) => {
+                  const split = plan.splits?.[num] ?? 0
+                  return (
+                    <div key={num} className="flex items-center gap-1 bg-gray-800 rounded px-2 py-1">
+                      <span className="text-gray-400">φ{num}</span>
+                      <span className="text-gray-300">{split}s</span>
+                    </div>
+                  )
+                })}
+              <div className="flex items-center gap-1 bg-gray-800 rounded px-2 py-1">
+                <span className="text-gray-400">Cycle</span>
+                <span className="text-blue-300 font-semibold">{cycle}s</span>
+              </div>
+            </div>
+          )}
+
+          {/* Playback controls */}
+          <div className="flex flex-col gap-3">
+            {/* Seek bar */}
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-gray-500 w-10 text-right">
+                {tmod.toFixed(1)}s
+              </span>
+              <input
+                type="range"
+                min={0}
+                max={totalT}
+                step={0.1}
+                value={tmod}
+                onChange={(e) => {
+                  setIsPlaying(false)
+                  setSimT(Number(e.target.value))
+                }}
+                className="flex-1 accent-blue-500"
+              />
+              <span className="text-xs text-gray-500 w-12">
+                {totalT}s
+              </span>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex items-center gap-3 justify-center">
+              {/* Rewind to start */}
+              <button
+                onClick={() => { setSimT(0); setIsPlaying(false) }}
+                className="btn-secondary px-3 py-1.5 text-xs flex items-center gap-1"
+                title="Reset"
+              >
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z" />
+                </svg>
+              </button>
+
+              {/* Play / Pause */}
+              <button
+                onClick={() => setIsPlaying((p) => !p)}
+                className="btn-primary px-5 py-2 flex items-center gap-2"
+              >
+                {isPlaying ? (
+                  <>
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    Pause
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                    </svg>
+                    Play
+                  </>
+                )}
+              </button>
+
+              {/* Speed toggle */}
+              <button
+                onClick={() => setSpeed((s) => (s === 1 ? 2 : s === 2 ? 4 : 1))}
+                className="btn-secondary px-3 py-1.5 text-xs font-semibold min-w-[44px]"
+              >
+                {speed}x
+              </button>
+            </div>
+
+            {/* Cycle progress bar */}
+            {plan && (
+              <div className="relative h-2 bg-gray-800 rounded-full overflow-hidden">
+                <div
+                  className="absolute h-full bg-blue-600 rounded-full transition-none"
+                  style={{ width: `${((tmod % cycle) / cycle) * 100}%` }}
+                />
+              </div>
+            )}
+            <div className="text-center text-xs text-gray-500">
+              Cycle position: {(tmod % cycle).toFixed(1)}s / {cycle}s
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Intersection readiness checklist */}
       {intersections.length > 0 && (
@@ -120,7 +289,7 @@ export default function SimulationView() {
         </div>
       )}
 
-      {/* Last run summary (if available) */}
+      {/* Last run summary */}
       {results?.status === 'complete' && (
         <div className="card mb-6 border-blue-800/50">
           <h3 className="section-header">Last Run — {results.active_plan} Plan</h3>
