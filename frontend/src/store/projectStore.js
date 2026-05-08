@@ -60,6 +60,8 @@ const useProjectStore = create((set, get) => ({
   activePlan: 'AM',
   isSaving: false,
   saveError: null,
+  isSimulating: false,
+  simulationError: null,
 
   // Actions
   setProject: (project) => set({ currentProject: project }),
@@ -113,6 +115,28 @@ const useProjectStore = create((set, get) => ({
       set({ currentProject: response.data, isSaving: false })
     } catch (err) {
       set({ isSaving: false, saveError: err.message })
+    }
+  },
+
+  runSimulation: async () => {
+    const { currentProject } = get()
+    if (!currentProject) return
+    set({ isSimulating: true, simulationError: null })
+    try {
+      // Save first so backend has latest data
+      await axios.put(`/api/projects/${currentProject.id}`, currentProject)
+      const response = await axios.post(`/api/projects/${currentProject.id}/simulate`)
+      set((state) => ({
+        currentProject: {
+          ...state.currentProject,
+          simulation_results: response.data,
+        },
+        isSimulating: false,
+      }))
+      return response.data
+    } catch (err) {
+      set({ isSimulating: false, simulationError: err.message })
+      throw err
     }
   },
 

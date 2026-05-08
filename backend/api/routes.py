@@ -1,8 +1,9 @@
 import json
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import StreamingResponse
 from .models import ProjectCreate, ProjectUpdate
 from storage import project_db
+from simulation.engine import run_simulation
 import io
 
 router = APIRouter(prefix="/api")
@@ -18,7 +19,6 @@ async def list_projects():
 async def create_project(body: ProjectCreate):
     project = await project_db.create_project(
         name=body.name,
-        analyst=body.analyst,
         extra_data={
             "corridor_speed_mph": body.corridor_speed_mph,
             "active_plan": body.active_plan,
@@ -51,6 +51,17 @@ async def delete_project(project_id: str):
     deleted = await project_db.delete_project(project_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Project not found")
+
+
+@router.post("/projects/{project_id}/simulate")
+async def simulate_project(project_id: str):
+    project = await project_db.get_project(project_id)
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project not found")
+    results = run_simulation(project)
+    # Persist simulation results on the project
+    await project_db.update_project(project_id, {"simulation_results": results})
+    return results
 
 
 @router.get("/projects/{project_id}/export")

@@ -41,24 +41,24 @@ async def list_projects() -> list[dict]:
             return result
 
 
-async def create_project(name: str, analyst: str, extra_data: dict) -> dict:
+async def create_project(name: str, extra_data: dict) -> dict:
     project_id = str(uuid.uuid4())
     today = str(date.today())
     project = {
         "id": project_id,
         "name": name,
-        "analyst": analyst,
         "created": today,
         "updated": today,
         "corridor_speed_mph": extra_data.get("corridor_speed_mph", 35),
         "active_plan": extra_data.get("active_plan", "AM"),
         "intersections": extra_data.get("intersections", []),
         "demand": extra_data.get("demand", {}),
+        "simulation_results": None,
     }
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
             "INSERT INTO projects (id, name, analyst, created, updated, data) VALUES (?, ?, ?, ?, ?, ?)",
-            (project_id, name, analyst, today, today, json.dumps(project)),
+            (project_id, name, "", today, today, json.dumps(project)),
         )
         await db.commit()
     return project
