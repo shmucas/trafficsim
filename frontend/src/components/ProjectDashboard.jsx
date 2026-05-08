@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 import useProjectStore from '../store/projectStore'
+import { buildSampleProject } from '../data/sampleCorridor'
 
 export default function ProjectDashboard() {
   const { loadProject, setProject, setActiveView } = useProjectStore()
@@ -11,6 +12,7 @@ export default function ProjectDashboard() {
   const [newName, setNewName] = useState('')
   const [creating, setCreating] = useState(false)
   const [deleteId, setDeleteId] = useState(null)
+  const [loadingSample, setLoadingSample] = useState(false)
 
   async function fetchProjects() {
     setLoading(true)
@@ -55,6 +57,23 @@ export default function ProjectDashboard() {
     }
   }
 
+  async function handleLoadSample() {
+    setLoadingSample(true)
+    setError(null)
+    try {
+      const createRes = await axios.post('/api/projects', { name: 'Main St — Sample Corridor' })
+      const projectId = createRes.data.id
+      const sampleData = buildSampleProject(projectId)
+      const saveRes = await axios.put(`/api/projects/${projectId}`, sampleData)
+      setProject(saveRes.data)
+      setActiveView('simulation')
+    } catch (e) {
+      setError('Failed to load sample corridor.')
+    } finally {
+      setLoadingSample(false)
+    }
+  }
+
   async function handleDelete(id) {
     try {
       await axios.delete(`/api/projects/${id}`)
@@ -88,15 +107,36 @@ export default function ProjectDashboard() {
               Manage your traffic corridor simulation projects
             </p>
           </div>
-          <button
-            onClick={() => setShowModal(true)}
-            className="btn-primary flex items-center gap-2"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            New Project
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleLoadSample}
+              disabled={loadingSample}
+              className="btn-secondary flex items-center gap-2"
+              title="Create a 4-intersection corridor with standard NEMA 8-phase timing and sample volumes"
+            >
+              {loadingSample ? (
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              )}
+              {loadingSample ? 'Loading…' : 'Load Sample'}
+            </button>
+            <button
+              onClick={() => setShowModal(true)}
+              className="btn-primary flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              New Project
+            </button>
+          </div>
         </div>
 
         {/* Error Banner */}
@@ -119,16 +159,56 @@ export default function ProjectDashboard() {
 
         {/* Empty State */}
         {!loading && projects.length === 0 && !error && (
-          <div className="text-center py-20">
+          <div className="text-center py-16">
             <div className="w-16 h-16 bg-gray-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
               </svg>
             </div>
             <h2 className="text-gray-300 font-semibold text-lg mb-2">No projects yet</h2>
-            <p className="text-gray-500 text-sm mb-6">Create your first corridor simulation project to get started.</p>
-            <button onClick={() => setShowModal(true)} className="btn-primary">
-              Create First Project
+            <p className="text-gray-500 text-sm mb-8">Start from scratch or try the sample corridor to explore the app.</p>
+
+            {/* Sample corridor card */}
+            <div className="max-w-md mx-auto mb-6 text-left bg-gray-800 border border-blue-800/50 rounded-xl p-5">
+              <div className="flex items-start gap-3 mb-3">
+                <div className="w-9 h-9 bg-blue-900/60 border border-blue-700 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
+                  <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-white font-semibold text-sm">Main St — Sample Corridor</h3>
+                  <p className="text-gray-400 text-xs mt-0.5">
+                    4 intersections · 35 mph · NEMA 8-phase · ped phases φ2/4/6/8
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-1.5 mb-4">
+                {['AM green wave', 'Standard volumes', 'Oak / Elm / Maple / Pine'].map((tag) => (
+                  <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full bg-gray-700 text-gray-400 border border-gray-600">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+              <button
+                onClick={handleLoadSample}
+                disabled={loadingSample}
+                className="btn-primary w-full flex items-center justify-center gap-2"
+              >
+                {loadingSample ? (
+                  <>
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Loading…
+                  </>
+                ) : 'Open Sample Corridor'}
+              </button>
+            </div>
+
+            <button onClick={() => setShowModal(true)} className="btn-ghost text-sm text-gray-500 hover:text-gray-300">
+              Or create a blank project →
             </button>
           </div>
         )}

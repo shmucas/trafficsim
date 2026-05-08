@@ -36,17 +36,23 @@ function phaseColor(phStart, split, yellow, t, cycle) {
 function computePhaseStarts(plan) {
   if (!plan) return {}
   const { cycle, offset = 0, splits = {} } = plan
-  const s = (ph) => splits[String(ph)] ?? 0
+  const s  = (ph) => splits[String(ph)] ?? 0
+  const mod = (v)  => ((v % cycle) + cycle * 2) % cycle
   const starts = {}
-  starts[2] = ((offset % cycle) + cycle) % cycle
-  starts[1] = (starts[2] - s(1) + cycle) % cycle
-  starts[5] = (starts[2] + s(2)) % cycle
-  starts[6] = (starts[5] + s(5)) % cycle
-  const bar1 = s(1) + s(2)
-  starts[3] = (starts[2] - s(2) + bar1 + cycle) % cycle
-  starts[4] = (starts[3] + s(3)) % cycle
-  starts[7] = (starts[4] + s(4)) % cycle
-  starts[8] = (starts[7] + s(7)) % cycle
+  // Ring 1 B1: φ1 (left) → φ2 (through); offset = start of φ2 green
+  starts[2] = mod(offset)
+  starts[1] = mod(starts[2] - s(1))
+  // Ring 1 B2: φ5 (left) → φ6 (through), begins when B1 ends
+  const b1End = mod(starts[2] + s(2))
+  starts[5]   = b1End
+  starts[6]   = mod(starts[5] + s(5))
+  // Ring 2 B1: φ3+φ4 must reach the same barrier point as Ring 1 B1
+  starts[3] = mod(b1End - s(3) - s(4))
+  starts[4] = mod(starts[3] + s(3))
+  // Ring 2 B2: φ7+φ8 must reach the same cycle end as Ring 1 B2
+  const b2End = mod(starts[6] + s(6))
+  starts[7]   = mod(b2End - s(7) - s(8))
+  starts[8]   = mod(starts[7] + s(7))
   return starts
 }
 
