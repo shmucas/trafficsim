@@ -4,7 +4,8 @@
 
 @layer base {
   body {
-    @apply bg-gray-900 text-white;
+    @apply bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-white;
+    font-size: 13px;
   }
 
   input[type="number"]::-webkit-inner-spin-button,
@@ -19,76 +20,111 @@
 
 @layer components {
   .card {
-    @apply bg-gray-800 rounded-xl border border-gray-700 p-5;
+    @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700;
+    padding: 14px;
+    border-radius: 4px;
   }
 
   .btn-primary {
-    @apply bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-lg transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-medium px-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+    height: 28px;
+    font-size: 12px;
+    border-radius: 3px;
+    white-space: nowrap;
   }
 
   .btn-secondary {
-    @apply bg-gray-700 hover:bg-gray-600 text-gray-200 font-medium px-4 py-2 rounded-lg transition-colors duration-150;
+    @apply inline-flex items-center bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-3 transition-colors dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200;
+    height: 28px;
+    font-size: 12px;
+    border-radius: 3px;
+    white-space: nowrap;
   }
 
   .btn-danger {
-    @apply bg-red-700 hover:bg-red-600 text-white font-medium px-4 py-2 rounded-lg transition-colors duration-150;
+    @apply inline-flex items-center bg-red-700 hover:bg-red-600 text-white font-medium px-3 transition-colors;
+    height: 28px;
+    font-size: 12px;
+    border-radius: 3px;
+    white-space: nowrap;
   }
 
   .btn-ghost {
-    @apply text-gray-400 hover:text-white hover:bg-gray-700 font-medium px-3 py-1.5 rounded-lg transition-colors duration-150;
+    @apply inline-flex items-center text-gray-600 hover:text-gray-900 hover:bg-gray-100 font-medium px-3 transition-colors dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700;
+    height: 28px;
+    font-size: 12px;
+    border-radius: 3px;
+    white-space: nowrap;
   }
 
   .input-field {
-    @apply bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-500 w-full;
+    @apply block w-full px-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder-gray-400 dark:placeholder-gray-500;
+    height: 28px;
+    font-size: 13px;
+    border-radius: 3px;
+    line-height: 26px;
   }
 
   .select-field {
-    @apply bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full;
+    @apply block w-full px-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500;
+    height: 28px;
+    font-size: 13px;
+    border-radius: 3px;
   }
 
   .tab-active {
-    @apply bg-gray-700 text-white border-b-2 border-blue-500;
+    @apply bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white border-b-2 border-blue-500;
   }
 
   .tab-inactive {
-    @apply text-gray-400 hover:text-gray-200 hover:bg-gray-700;
+    @apply text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700;
   }
 
   .label {
-    @apply text-xs font-medium text-gray-400 uppercase tracking-wider;
+    @apply font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400;
+    font-size: 11px;
   }
 
   .section-header {
-    @apply text-sm font-semibold text-gray-300 uppercase tracking-wide mb-3;
+    @apply font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2;
+    font-size: 11px;
   }
 }
 
-/* Custom scrollbar */
+/* Compact scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #1f2937;
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 2px;
+}
+.dark ::-webkit-scrollbar-thumb {
   background: #4b5563;
-  border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
   background: #6b7280;
 }
 
 /* Table styles */
 .data-table {
-  @apply w-full text-sm;
+  @apply w-full;
+  font-size: 12px;
 }
 .data-table th {
-  @apply bg-gray-900 text-gray-400 font-medium px-3 py-2 text-left text-xs uppercase tracking-wider;
+  @apply bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 font-medium px-3 py-1.5 text-left uppercase tracking-wider;
+  font-size: 11px;
 }
 .data-table td {
-  @apply px-3 py-2 border-t border-gray-700 text-gray-200;
+  @apply px-3 py-1.5 border-t border-gray-100 dark:border-gray-700 text-gray-800 dark:text-gray-200;
 }
 .data-table tr:hover td {
-  @apply bg-gray-700;
+  @apply bg-gray-50 dark:bg-gray-700/50;
 }

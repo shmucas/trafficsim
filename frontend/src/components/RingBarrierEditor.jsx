@@ -139,23 +139,23 @@ function PhaseCell({
       onDragOver={(e) => { e.preventDefault(); onDragOver(e) }}
       onDrop={(e) => { e.preventDefault(); onDrop(e) }}
       onDragEnd={onDragEnd}
-      className={`relative flex flex-col rounded-lg border transition-all select-none cursor-grab active:cursor-grabbing
+      className={`relative flex flex-col border transition-all select-none cursor-grab active:cursor-grabbing
         ${active
           ? isDragOver
-            ? 'border-blue-400 bg-blue-950/60 shadow-lg shadow-blue-900/40'
+            ? 'border-blue-400 bg-blue-950/60'
             : 'border-gray-600 bg-gray-800/80 hover:border-gray-500'
           : 'border-gray-700/50 bg-gray-900/40 opacity-40'
         }
-        ${isDragging ? 'opacity-30 ring-2 ring-blue-500' : ''}
+        ${isDragging ? 'opacity-30 ring-1 ring-blue-500' : ''}
       `}
-      style={{ minWidth: 118, width: 118 }}
+      style={{ minWidth: 88, width: 88, borderRadius: 3 }}
     >
       {/* Header: phase number + toggles */}
-      <div className="flex items-center justify-between px-2 pt-2 pb-1">
-        <span className={`text-sm font-bold ${active ? 'text-white' : 'text-gray-600'}`}>
+      <div className="flex items-center justify-between px-1.5 pt-1.5 pb-1">
+        <span className={`text-xs font-bold ${active ? 'text-white' : 'text-gray-600'}`}>
           φ{phNum}
         </span>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
           {/* Ped toggle */}
           <button
             title={hasPed ? 'Ped phase ON — click to remove' : 'Add pedestrian phase'}
@@ -166,46 +166,49 @@ function PhaseCell({
                 onPedUpdate({ add: { phase: phNum, walk_s: 7, ped_clearance_s: 14 } })
               }
             }}
-            className={`text-xs rounded px-1 py-0.5 transition-colors ${
+            className={`text-[9px] px-1 py-0 leading-4 transition-colors ${
               hasPed
                 ? 'bg-teal-800 text-teal-300 border border-teal-600'
                 : 'text-gray-600 hover:text-gray-400'
             }`}
-          >🚶</button>
+            style={{ borderRadius: 2 }}
+          >P</button>
           {/* Active toggle */}
           <button
             title={active ? 'Deactivate phase' : 'Activate phase'}
             onClick={() => onPhaseUpdate(key, { active: !active })}
-            className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${
+            className={`w-3 h-3 border flex items-center justify-center transition-colors ${
               active
                 ? 'bg-green-500 border-green-400'
                 : 'bg-gray-700 border-gray-600 hover:border-gray-500'
             }`}
+            style={{ borderRadius: '50%' }}
           >
-            <span className={`block w-2 h-2 rounded-full ${active ? 'bg-white' : 'bg-gray-500'}`} />
+            <span className={`block w-1.5 h-1.5 ${active ? 'bg-white' : 'bg-gray-500'}`} style={{ borderRadius: '50%' }} />
           </button>
         </div>
       </div>
 
       {/* Body — only shown when active */}
       {active && (
-        <div className="px-2 pb-2 space-y-1.5 flex-1">
+        <div className="px-1.5 pb-1.5 space-y-1 flex-1">
           {/* Split input */}
-          <div className="flex items-center gap-1">
-            <label className="text-gray-500 text-[10px] w-8 shrink-0">Split</label>
+          <div className="flex items-center gap-0.5">
+            <label className="text-gray-500 text-[9px] w-6 shrink-0">Spl</label>
             <input
               type="number"
-              className="bg-gray-900 border border-gray-600 rounded text-white text-xs text-center w-full py-0.5 focus:border-blue-500 focus:outline-none"
+              className="bg-gray-900 border border-gray-600 text-white text-[10px] text-center w-full focus:border-blue-500 focus:outline-none"
+              style={{ borderRadius: 2, height: 18, padding: '0 2px' }}
               value={split}
               onChange={(e) => onSplitUpdate(key, e.target.value)}
               min={0} max={cycle} step={1}
               onClick={(e) => e.stopPropagation()}
             />
-            <span className="text-gray-500 text-[10px]">s</span>
+            <span className="text-gray-500 text-[9px]">s</span>
           </div>
 
           {/* Green bar */}
-          <div className="flex h-2 rounded overflow-hidden" title={`Eff green ${eg}s / Yellow ${yellow}s / All-red ${allRed}s`}>
+          <div className="flex h-1.5 overflow-hidden" style={{ borderRadius: 2 }} title={`Eff green ${eg}s / Yellow ${yellow}s / All-red ${allRed}s`}>
             <div className="bg-green-500" style={{ width: `${pctG}%` }} />
             <div className="bg-yellow-500" style={{ width: `${pctY}%` }} />
             <div className="bg-red-700"   style={{ width: `${pctR}%` }} />
@@ -213,14 +216,15 @@ function PhaseCell({
           </div>
 
           {/* Min / Max green */}
-          <div className="grid grid-cols-2 gap-1">
+          <div className="grid grid-cols-2 gap-0.5">
             <div>
-              <div className={`text-[9px] mb-0.5 ${minViol ? 'text-orange-400' : 'text-gray-500'}`}>
-                Min {minViol ? '⚠' : ''}
+              <div className={`text-[8px] mb-0.5 ${minViol ? 'text-orange-400' : 'text-gray-500'}`}>
+                Min{minViol ? '!' : ''}
               </div>
               <input
                 type="number"
-                className="bg-gray-900 border border-gray-600 rounded text-white text-xs text-center w-full py-0.5 focus:border-blue-500 focus:outline-none"
+                className="bg-gray-900 border border-gray-600 text-white text-[10px] text-center w-full focus:border-blue-500 focus:outline-none"
+                style={{ borderRadius: 2, height: 18, padding: '0 2px' }}
                 value={minG}
                 onChange={(e) => onPhaseUpdate(key, { min_green: Number(e.target.value) })}
                 min={1} max={120} step={1}
@@ -228,12 +232,13 @@ function PhaseCell({
               />
             </div>
             <div>
-              <div className={`text-[9px] mb-0.5 ${maxViol ? 'text-amber-400' : 'text-gray-500'}`}>
-                Max {maxViol ? '⚠' : ''}
+              <div className={`text-[8px] mb-0.5 ${maxViol ? 'text-amber-400' : 'text-gray-500'}`}>
+                Max{maxViol ? '!' : ''}
               </div>
               <input
                 type="number"
-                className="bg-gray-900 border border-gray-600 rounded text-white text-xs text-center w-full py-0.5 focus:border-blue-500 focus:outline-none"
+                className="bg-gray-900 border border-gray-600 text-white text-[10px] text-center w-full focus:border-blue-500 focus:outline-none"
+                style={{ borderRadius: 2, height: 18, padding: '0 2px' }}
                 value={maxG}
                 onChange={(e) => onPhaseUpdate(key, { max_green: Number(e.target.value) })}
                 min={1} max={200} step={1}
@@ -243,12 +248,13 @@ function PhaseCell({
           </div>
 
           {/* Yellow / All-Red */}
-          <div className="grid grid-cols-2 gap-1">
+          <div className="grid grid-cols-2 gap-0.5">
             <div>
-              <div className="text-[9px] text-gray-500 mb-0.5">Yellow</div>
+              <div className="text-[8px] text-gray-500 mb-0.5">Yel</div>
               <input
                 type="number"
-                className="bg-gray-900 border border-gray-600 rounded text-white text-xs text-center w-full py-0.5 focus:border-blue-500 focus:outline-none"
+                className="bg-gray-900 border border-gray-600 text-white text-[10px] text-center w-full focus:border-blue-500 focus:outline-none"
+                style={{ borderRadius: 2, height: 18, padding: '0 2px' }}
                 value={yellow}
                 onChange={(e) => onPhaseUpdate(key, { yellow: Number(e.target.value) })}
                 min={1} max={10} step={0.5}
@@ -256,10 +262,11 @@ function PhaseCell({
               />
             </div>
             <div>
-              <div className="text-[9px] text-gray-500 mb-0.5">All-Red</div>
+              <div className="text-[8px] text-gray-500 mb-0.5">AR</div>
               <input
                 type="number"
-                className="bg-gray-900 border border-gray-600 rounded text-white text-xs text-center w-full py-0.5 focus:border-blue-500 focus:outline-none"
+                className="bg-gray-900 border border-gray-600 text-white text-[10px] text-center w-full focus:border-blue-500 focus:outline-none"
+                style={{ borderRadius: 2, height: 18, padding: '0 2px' }}
                 value={allRed}
                 onChange={(e) => onPhaseUpdate(key, { all_red: Number(e.target.value) })}
                 min={0} max={10} step={0.5}
@@ -270,7 +277,8 @@ function PhaseCell({
 
           {/* Recall */}
           <select
-            className="bg-gray-900 border border-gray-600 rounded text-gray-300 text-[10px] w-full py-0.5 focus:border-blue-500 focus:outline-none"
+            className="bg-gray-900 border border-gray-600 text-gray-300 w-full focus:border-blue-500 focus:outline-none"
+            style={{ borderRadius: 2, height: 18, fontSize: 9, padding: '0 2px' }}
             value={phase.recall || 'None'}
             onChange={(e) => onPhaseUpdate(key, { recall: e.target.value })}
             onClick={(e) => e.stopPropagation()}
@@ -280,30 +288,30 @@ function PhaseCell({
 
           {/* Ped inputs */}
           {hasPed && (
-            <div className="pt-1 border-t border-teal-800/50 space-y-1">
-              <div className="flex items-center gap-1">
-                <span className="text-[9px] text-teal-400 w-8">Walk</span>
+            <div className="pt-0.5 border-t border-teal-800/50 space-y-0.5">
+              <div className="flex items-center gap-0.5">
+                <span className="text-[8px] text-teal-400 w-5">Wlk</span>
                 <input
                   type="number"
-                  className="bg-gray-900 border border-teal-800 rounded text-teal-300 text-xs text-center w-full py-0.5 focus:outline-none"
+                  className="bg-gray-900 border border-teal-800 text-teal-300 text-[10px] text-center w-full focus:outline-none"
+                  style={{ borderRadius: 2, height: 18, padding: '0 2px' }}
                   value={ped.walk_s}
                   onChange={(e) => onPedUpdate({ update: { phase: phNum, walk_s: Number(e.target.value) } })}
                   min={1} max={60}
                   onClick={(e) => e.stopPropagation()}
                 />
-                <span className="text-[9px] text-gray-500">s</span>
               </div>
-              <div className="flex items-center gap-1">
-                <span className="text-[9px] text-teal-400 w-8">Clr</span>
+              <div className="flex items-center gap-0.5">
+                <span className="text-[8px] text-teal-400 w-5">Clr</span>
                 <input
                   type="number"
-                  className="bg-gray-900 border border-teal-800 rounded text-teal-300 text-xs text-center w-full py-0.5 focus:outline-none"
+                  className="bg-gray-900 border border-teal-800 text-teal-300 text-[10px] text-center w-full focus:outline-none"
+                  style={{ borderRadius: 2, height: 18, padding: '0 2px' }}
                   value={ped.ped_clearance_s}
                   onChange={(e) => onPedUpdate({ update: { phase: phNum, ped_clearance_s: Number(e.target.value) } })}
                   min={1} max={90}
                   onClick={(e) => e.stopPropagation()}
                 />
-                <span className="text-[9px] text-gray-500">s</span>
               </div>
             </div>
           )}
@@ -461,8 +469,8 @@ function RingRow({
   // Drop zone when ring is empty
   const isEmpty = phases.length === 0
   return (
-    <div className="flex items-stretch min-h-[140px]">
-      <div className="flex items-center justify-center w-14 shrink-0">
+    <div className="flex items-stretch min-h-[110px]">
+      <div className="flex items-center justify-center w-10 shrink-0">
         <span className="text-xs font-semibold text-gray-500 tracking-wider"
           style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
           Ring {ringNum}

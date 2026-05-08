@@ -164,6 +164,22 @@ const useProjectStore = create((set, get) => ({
     })
   },
 
+  duplicateIntersection: (id) =>
+    set((state) => {
+      if (!state.currentProject) return {}
+      const intersections = state.currentProject.intersections || []
+      const src = intersections.find((ix) => ix.id === id)
+      if (!src) return {}
+      const maxId = Math.max(...intersections.map((ix) => ix.id))
+      const clone = JSON.parse(JSON.stringify(src))
+      clone.id = maxId + 1
+      clone.name = `${src.name} (Copy)`
+      const idx = intersections.findIndex((ix) => ix.id === id)
+      const updated = [...intersections]
+      updated.splice(idx + 1, 0, clone)
+      return { currentProject: { ...state.currentProject, intersections: updated } }
+    }),
+
   closeProject: () =>
     set({
       currentProject: null,

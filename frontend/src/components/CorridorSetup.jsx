@@ -32,7 +32,7 @@ export default function CorridorSetup() {
       : 1
     const newIx = makeDefaultIntersection(nextId)
     if (intersections.length > 0) {
-      newIx.distance_from_prev_ft = 1320 // default 1/4 mile
+      newIx.distance_from_prev_ft = 1320
     }
     updateProject({ intersections: [...intersections, newIx] })
   }
@@ -65,10 +65,7 @@ export default function CorridorSetup() {
     updateProject({ intersections: arr })
   }
 
-  // Drag-and-drop handlers
-  function onDragStart(index) {
-    setDragIndex(index)
-  }
+  function onDragStart(index) { setDragIndex(index) }
 
   function onDragOver(e, index) {
     e.preventDefault()
@@ -96,21 +93,21 @@ export default function CorridorSetup() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-4xl mx-auto p-4">
       {/* Page Header */}
-      <div className="mb-6">
-        <h2 className="text-xl font-bold text-white">Corridor Setup</h2>
-        <p className="text-gray-400 text-sm mt-1">
-          Configure the corridor properties and add intersections
+      <div className="mb-4">
+        <h2 className="text-base font-semibold text-gray-900 dark:text-white">Corridor Setup</h2>
+        <p className="text-gray-500 dark:text-gray-400 text-xs mt-0.5">
+          Configure corridor properties and add intersections
         </p>
       </div>
 
       {/* Corridor Properties */}
-      <div className="card mb-6">
+      <div className="card mb-4">
         <h3 className="section-header">Corridor Properties</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="label block mb-1.5">Project Name</label>
+            <label className="label block mb-1">Project Name</label>
             <input
               type="text"
               className="input-field"
@@ -119,7 +116,7 @@ export default function CorridorSetup() {
             />
           </div>
           <div>
-            <label className="label block mb-1.5">Corridor Speed (mph)</label>
+            <label className="label block mb-1">Corridor Speed (mph)</label>
             <input
               type="number"
               className="input-field"
@@ -135,22 +132,21 @@ export default function CorridorSetup() {
 
       {/* Intersections */}
       <div className="card">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3">
           <div>
             <h3 className="section-header mb-0">Intersections</h3>
             {intersections.length > 1 && (
-              <p className="text-xs text-gray-500 mt-0.5">
-                Total corridor length: {totalCorridor().toLocaleString()} ft
-                ({(totalCorridor() / 5280).toFixed(2)} mi)
+              <p className="text-[11px] text-gray-500 dark:text-gray-500 mt-0.5">
+                Total length: {totalCorridor().toLocaleString()} ft ({(totalCorridor() / 5280).toFixed(2)} mi)
               </p>
             )}
           </div>
           <button
             onClick={handleAddIntersection}
             disabled={intersections.length >= 12}
-            className="btn-primary text-xs py-1.5 px-3 flex items-center gap-1.5"
+            className="btn-primary gap-1"
           >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
             Add Intersection
@@ -158,27 +154,27 @@ export default function CorridorSetup() {
         </div>
 
         {intersections.length === 0 && (
-          <div className="text-center py-10">
-            <div className="w-12 h-12 bg-gray-700 rounded-xl flex items-center justify-center mx-auto mb-3">
-              <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="text-center py-8">
+            <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 flex items-center justify-center mx-auto mb-2" style={{ borderRadius: 4 }}>
+              <svg className="w-5 h-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
               </svg>
             </div>
-            <p className="text-gray-500 text-sm">
+            <p className="text-gray-500 dark:text-gray-500 text-xs">
               No intersections yet. Add up to 12 intersections to your corridor.
             </p>
           </div>
         )}
 
         {intersections.length > 0 && (
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {/* Column headers */}
-            <div className="grid items-center gap-3 px-2 pb-1 border-b border-gray-700"
-              style={{ gridTemplateColumns: '2rem 1fr 140px 140px 7rem 2.5rem' }}>
+            <div className="grid items-center gap-2 px-1 pb-1 border-b border-gray-100 dark:border-gray-700"
+              style={{ gridTemplateColumns: '1.5rem 1fr 120px 120px 6rem 2rem' }}>
               <div />
               <div className="label">Intersection Name</div>
               <div className="label">Type</div>
-              <div className="label">Dist. from Prev. (ft)</div>
+              <div className="label">Dist. from Prev (ft)</div>
               <div />
               <div />
             </div>
@@ -191,18 +187,18 @@ export default function CorridorSetup() {
                 onDragOver={(e) => onDragOver(e, index)}
                 onDrop={() => onDrop(index)}
                 onDragEnd={() => { setDragIndex(null); setOverIndex(null) }}
-                className={`grid items-center gap-3 p-2 rounded-lg border transition-colors duration-100 ${
+                className={`grid items-center gap-2 p-1.5 transition-colors duration-100 ${
                   overIndex === index && dragIndex !== index
-                    ? 'border-blue-500 bg-blue-900/20'
-                    : 'border-transparent hover:bg-gray-700/40'
+                    ? 'border border-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                    : 'border border-transparent hover:bg-gray-50 dark:hover:bg-gray-700/40'
                 }`}
-                style={{ gridTemplateColumns: '2rem 1fr 140px 140px 7rem 2.5rem' }}
+                style={{ gridTemplateColumns: '1.5rem 1fr 120px 120px 6rem 2rem', borderRadius: 3 }}
               >
                 {/* Drag Handle + Index */}
                 <div className="flex flex-col items-center gap-0.5">
-                  <span className="text-gray-600 text-xs">{index + 1}</span>
+                  <span className="text-gray-400 dark:text-gray-600 text-[10px]">{index + 1}</span>
                   <svg
-                    className="w-3.5 h-3.5 text-gray-600 cursor-grab active:cursor-grabbing"
+                    className="w-3 h-3 text-gray-400 dark:text-gray-600 cursor-grab active:cursor-grabbing"
                     fill="none" stroke="currentColor" viewBox="0 0 24 24"
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -213,7 +209,7 @@ export default function CorridorSetup() {
                 {/* Name */}
                 <input
                   type="text"
-                  className="input-field text-sm"
+                  className="input-field text-xs"
                   value={ix.name}
                   onChange={(e) => handleFieldChange(ix.id, 'name', e.target.value)}
                   placeholder={`Intersection ${index + 1}`}
@@ -221,7 +217,7 @@ export default function CorridorSetup() {
 
                 {/* Type */}
                 <select
-                  className="select-field text-sm"
+                  className="select-field text-xs"
                   value={ix.type}
                   onChange={(e) => handleFieldChange(ix.id, 'type', e.target.value)}
                 >
@@ -233,7 +229,7 @@ export default function CorridorSetup() {
                 {/* Distance */}
                 <input
                   type="number"
-                  className={`input-field text-sm ${index === 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
+                  className={`input-field text-xs ${index === 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
                   value={index === 0 ? 0 : (ix.distance_from_prev_ft || 0)}
                   disabled={index === 0}
                   onChange={(e) =>
@@ -246,7 +242,7 @@ export default function CorridorSetup() {
                 {/* Edit button */}
                 <button
                   onClick={() => handleEdit(ix.id)}
-                  className="btn-secondary text-xs py-1 px-3 w-full text-center"
+                  className="btn-secondary w-full justify-center"
                 >
                   Edit
                 </button>
@@ -256,20 +252,20 @@ export default function CorridorSetup() {
                   <button
                     onClick={() => handleMoveUp(index)}
                     disabled={index === 0}
-                    className="text-gray-600 hover:text-gray-300 disabled:opacity-30 transition-colors p-0.5"
+                    className="text-gray-400 dark:text-gray-600 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-30 transition-colors p-0.5"
                     title="Move up"
                   >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
                     </svg>
                   </button>
                   <button
                     onClick={() => handleMoveDown(index)}
                     disabled={index === intersections.length - 1}
-                    className="text-gray-600 hover:text-gray-300 disabled:opacity-30 transition-colors p-0.5"
+                    className="text-gray-400 dark:text-gray-600 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-30 transition-colors p-0.5"
                     title="Move down"
                   >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </button>
@@ -280,13 +276,13 @@ export default function CorridorSetup() {
         )}
 
         {intersections.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-gray-700 flex flex-col gap-2">
+          <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex flex-col gap-1.5">
             {intersections.map((ix, index) => (
-              <div key={ix.id} className="flex items-center justify-between text-xs text-gray-500">
-                <span className="font-medium text-gray-400">{ix.name || `Intersection ${index + 1}`}</span>
+              <div key={ix.id} className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-500">
+                <span className="font-medium text-gray-600 dark:text-gray-400">{ix.name || `Intersection ${index + 1}`}</span>
                 <button
                   onClick={() => handleRemoveIntersection(ix.id)}
-                  className="text-red-600 hover:text-red-400 transition-colors"
+                  className="text-red-500 hover:text-red-400 transition-colors"
                 >
                   Remove
                 </button>
@@ -297,14 +293,14 @@ export default function CorridorSetup() {
       </div>
 
       {/* Navigation */}
-      <div className="flex justify-end mt-6">
+      <div className="flex justify-end mt-4">
         <button
           onClick={() => setActiveView('demand')}
           disabled={intersections.length === 0}
-          className="btn-primary flex items-center gap-2"
+          className="btn-primary gap-2"
         >
           Next: Demand Input
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </button>

@@ -227,7 +227,7 @@ function drawCorridor(ctx, intersections, layout, activePlan, simT, W) {
   const ewBot = CY + EW_ROAD_H / 2
 
   ctx.clearRect(0, 0, W, CANVAS_H)
-  ctx.fillStyle = '#111827'
+  ctx.fillStyle = '#191c24'
   ctx.fillRect(0, 0, W, CANVAS_H)
 
   // EW arterial road (full width)
@@ -351,8 +351,8 @@ export default function SimulationCanvas({ intersections, activePlan, simT }) {
       ref={canvasRef}
       width={W}
       height={CANVAS_H}
-      className="rounded-lg block"
-      style={{ background: '#111827' }}
+      className="block"
+      style={{ background: '#191c24', borderRadius: 4 }}
     />
   )
 }
