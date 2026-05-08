@@ -40,6 +40,12 @@ export const DEFAULT_PHASE_ASSIGNMENTS = {
   SB: { L: 7, T: 8, R: 8 },
 }
 
+export const DEFAULT_RING_CONFIG = {
+  ring1: [1, 2, 5, 6],
+  ring2: [3, 4, 7, 8],
+  barrier_pos: 2,
+}
+
 export function makeDefaultIntersection(id, name = '') {
   return {
     id,
@@ -54,6 +60,7 @@ export function makeDefaultIntersection(id, name = '') {
     ],
     nema_phases: JSON.parse(JSON.stringify(DEFAULT_NEMA_PHASES)),
     phase_assignments: JSON.parse(JSON.stringify(DEFAULT_PHASE_ASSIGNMENTS)),
+    ring_config: JSON.parse(JSON.stringify(DEFAULT_RING_CONFIG)),
     overlaps: [],
     ped_phases: [],
     detectors: [],

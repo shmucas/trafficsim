@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import useProjectStore from '../store/projectStore'
-import SimulationCanvas from './SimulationCanvas'
+import SimulationCanvas, { CANVAS_HEIGHT } from './SimulationCanvas'
 
 const LOS_COLORS = {
   A: 'text-green-400',
@@ -25,16 +25,17 @@ export default function SimulationView() {
   const results = currentProject?.simulation_results
 
   // playback state
-  const [selectedIxIdx, setSelectedIxIdx] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
   const [simT, setSimT] = useState(0)
   const [speed, setSpeed] = useState(1)
   const rafRef = useRef(null)
   const lastTsRef = useRef(null)
 
-  const plan = intersections[selectedIxIdx]?.timing_plans?.[activePlan]
-  const cycle = plan?.cycle ?? 120
-  const totalT = cycle * 3
+  const maxCycle = Math.max(
+    120,
+    ...intersections.map((ix) => ix.timing_plans?.[activePlan]?.cycle ?? 120)
+  )
+  const totalT = maxCycle * 3
 
   const tick = useCallback((ts) => {
     if (lastTsRef.current == null) lastTsRef.current = ts
@@ -57,13 +58,14 @@ export default function SimulationView() {
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current) }
   }, [isPlaying, tick])
 
-  // reset sim time when intersection or plan changes
   useEffect(() => {
     setSimT(0)
     setIsPlaying(false)
-  }, [selectedIxIdx, activePlan])
+  }, [activePlan])
 
   if (!currentProject) return null
+
+  const tmod = totalT > 0 ? ((simT % totalT) + totalT) % totalT : 0
 
   async function handleRun() {
     try {
@@ -77,9 +79,6 @@ export default function SimulationView() {
   const readyCount = intersections.filter(
     (ix) => (ix.approaches || []).length > 0 && !!ix.timing_plans?.[activePlan]
   ).length
-
-  const selectedIx = intersections[selectedIxIdx]
-  const tmod = totalT > 0 ? ((simT % totalT) + totalT) % totalT : 0
 
   return (
     <div className="max-w-5xl mx-auto p-6">
@@ -111,56 +110,30 @@ export default function SimulationView() {
         </div>
       </div>
 
-      {/* 2D Visual Simulation */}
+      {/* 2D Visual Simulation — full corridor */}
       {intersections.length > 0 && (
         <div className="card mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="section-header mb-0">Visual Simulation</h3>
-            <div className="flex items-center gap-2">
-              <label className="label text-xs">Intersection:</label>
-              <select
-                className="select-field text-sm py-1"
-                value={selectedIxIdx}
-                onChange={(e) => setSelectedIxIdx(Number(e.target.value))}
-              >
-                {intersections.map((ix, i) => (
-                  <option key={ix.id} value={i}>{ix.name}</option>
-                ))}
-              </select>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="section-header mb-0">Corridor Visual</h3>
+            <div className="flex items-center gap-3 text-xs text-gray-500">
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block w-3 h-3 rounded-full bg-blue-500" /> Queued
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block w-3 h-3 rounded-full bg-emerald-400" /> Moving
+              </span>
+              <span>{intersections.length} intersection{intersections.length !== 1 ? 's' : ''} · {activePlan}</span>
             </div>
           </div>
 
-          {/* Canvas */}
-          <div className="flex justify-center mb-4 overflow-auto">
-            {selectedIx && (
-              <SimulationCanvas
-                intersection={selectedIx}
-                activePlan={activePlan}
-                simT={tmod}
-              />
-            )}
+          {/* Scrollable canvas wrapper */}
+          <div className="mb-4 overflow-x-auto rounded-lg" style={{ maxHeight: CANVAS_HEIGHT + 4 }}>
+            <SimulationCanvas
+              intersections={intersections}
+              activePlan={activePlan}
+              simT={tmod}
+            />
           </div>
-
-          {/* Phase state legend */}
-          {selectedIx && plan && (
-            <div className="flex flex-wrap gap-3 mb-4 justify-center text-xs">
-              {Object.entries(selectedIx.nema_phases ?? {})
-                .filter(([, ph]) => ph.active)
-                .map(([num]) => {
-                  const split = plan.splits?.[num] ?? 0
-                  return (
-                    <div key={num} className="flex items-center gap-1 bg-gray-800 rounded px-2 py-1">
-                      <span className="text-gray-400">φ{num}</span>
-                      <span className="text-gray-300">{split}s</span>
-                    </div>
-                  )
-                })}
-              <div className="flex items-center gap-1 bg-gray-800 rounded px-2 py-1">
-                <span className="text-gray-400">Cycle</span>
-                <span className="text-blue-300 font-semibold">{cycle}s</span>
-              </div>
-            </div>
-          )}
 
           {/* Playback controls */}
           <div className="flex flex-col gap-3">
@@ -231,16 +204,14 @@ export default function SimulationView() {
             </div>
 
             {/* Cycle progress bar */}
-            {plan && (
-              <div className="relative h-2 bg-gray-800 rounded-full overflow-hidden">
-                <div
-                  className="absolute h-full bg-blue-600 rounded-full transition-none"
-                  style={{ width: `${((tmod % cycle) / cycle) * 100}%` }}
-                />
-              </div>
-            )}
+            <div className="relative h-2 bg-gray-800 rounded-full overflow-hidden">
+              <div
+                className="absolute h-full bg-blue-600 rounded-full transition-none"
+                style={{ width: `${((tmod % maxCycle) / maxCycle) * 100}%` }}
+              />
+            </div>
             <div className="text-center text-xs text-gray-500">
-              Cycle position: {(tmod % cycle).toFixed(1)}s / {cycle}s
+              Cycle position: {(tmod % maxCycle).toFixed(1)}s / {maxCycle}s
             </div>
           </div>
         </div>
