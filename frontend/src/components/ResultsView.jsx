@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import useProjectStore from '../store/projectStore'
+import TSDCanvas from './TSDCanvas'
 
 const LOS_COLORS = {
   A: 'text-green-400', B: 'text-green-400',
@@ -147,6 +148,21 @@ export default function ResultsView() {
           <div className="text-2xl font-bold text-white">{corridor_summary.intersections_analyzed}</div>
           <div className="text-xs text-gray-500 mt-0.5">analyzed</div>
         </div>
+      </div>
+
+      {/* Time-Space Diagram — primary Phase 3 deliverable */}
+      <div className="card mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="section-header mb-0">Time-Space Diagram</h3>
+          <span className="text-xs text-blue-400 bg-blue-900/30 border border-blue-800 px-2 py-1 rounded">
+            Phase 3
+          </span>
+        </div>
+        <TSDCanvas
+          intersections={currentProject.intersections || []}
+          activePlan={activePlan}
+          corridorSpeedMph={currentProject.corridor_speed_mph || 35}
+        />
       </div>
 
       {/* Intersection-level summary row */}
@@ -394,17 +410,6 @@ export default function ResultsView() {
               </tbody>
             </table>
           )}
-        </div>
-      </div>
-
-      {/* TSD stub */}
-      <div className="card mt-6">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="section-header mb-0">Time-Space Diagram</h3>
-          <span className="text-xs text-gray-500 bg-gray-700 px-2 py-1 rounded">Phase 3</span>
-        </div>
-        <div className="rounded-lg bg-gray-900/50 border border-gray-700 flex items-center justify-center h-32 text-gray-600 text-sm">
-          TSD rendering — Phase 3
         </div>
       </div>
 
