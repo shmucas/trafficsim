@@ -167,27 +167,23 @@ function drawVehicles(ctx, ix, ixX, activePlan, phStarts, simT) {
   const spacing = CAR_L + 4
 
   function animateDir({ ph, isHoriz, dir, stopCoord, laneCoord }) {
-    const split  = splits[String(ph)] ?? 0
-    const yellow = nema[String(ph)]?.yellow ?? YELLOW_DUR
-    const allRed = nema[String(ph)]?.all_red ?? 1
-    const green  = Math.max(0, split - yellow - allRed)
-    const col    = phaseColor(phStarts[ph] ?? 0, split, yellow, simT, cycle)
-    const tmod   = ((simT % cycle) + cycle) % cycle
+    const split   = splits[String(ph)] ?? 0
+    const yellow  = nema[String(ph)]?.yellow ?? YELLOW_DUR
+    const allRed  = nema[String(ph)]?.all_red ?? 1
     const phStart = phStarts[ph] ?? 0
-    const tig    = tmod >= phStart ? tmod - phStart : cycle - phStart + tmod
+    const col     = phaseColor(phStart, split, yellow, simT, cycle)
+    const tmod    = ((simT % cycle) + cycle) % cycle
 
-    if (col !== 'G') {
-      const redT = col === 'R' ? tig : split - yellow
-      const qLen = Math.min(Math.floor(redT / 2.5), maxQ)
-      for (let qi = 0; qi < qLen; qi++) {
-        const pos = stopCoord + dir * (qi * spacing + spacing / 2)
-        const [px, py] = isHoriz ? [pos, laneCoord] : [laneCoord, pos]
-        drawCar(ctx, px, py, isHoriz, -dir, '#3b82f6')
-      }
-    } else {
-      const qAtGreen = Math.min(Math.floor((split - green) / 2.5), maxQ)
+    // Queue that accumulated during the full red period (cycle − split seconds)
+    const redDur   = Math.max(0, cycle - split)
+    const qAtGreen = Math.min(Math.floor(redDur / 2.5), maxQ)
+
+    if (col === 'G' || col === 'Y') {
+      // time elapsed since green started (tig = 0 at green onset)
+      const tig        = tmod >= phStart ? tmod - phStart : cycle - phStart + tmod
       const discharged = Math.floor(tig / SAT_HEAD)
       const remaining  = Math.max(0, qAtGreen - discharged)
+
       for (let qi = 0; qi < remaining; qi++) {
         const pos = stopCoord + dir * (qi * spacing + spacing / 2)
         const [px, py] = isHoriz ? [pos, laneCoord] : [laneCoord, pos]
@@ -198,6 +194,17 @@ function drawVehicles(ctx, ix, ixX, activePlan, phStarts, simT) {
         const pos = stopCoord - dir * (elapsed * DISCHARGE_SPD + CAR_L / 2)
         const [px, py] = isHoriz ? [pos, laneCoord] : [laneCoord, pos]
         drawCar(ctx, px, py, isHoriz, -dir, '#34d399')
+      }
+    } else {
+      // Red: measure time from when this phase turned red (phStart + split)
+      const redStart   = (phStart + split) % cycle
+      const timeIntoRed = ((tmod - redStart) + cycle) % cycle
+      const qLen = Math.min(Math.floor(timeIntoRed / 2.5), maxQ)
+
+      for (let qi = 0; qi < qLen; qi++) {
+        const pos = stopCoord + dir * (qi * spacing + spacing / 2)
+        const [px, py] = isHoriz ? [pos, laneCoord] : [laneCoord, pos]
+        drawCar(ctx, px, py, isHoriz, -dir, '#3b82f6')
       }
     }
   }

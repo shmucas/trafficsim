@@ -15,6 +15,187 @@
 import React, { useState, useRef, useCallback } from 'react'
 import { DEFAULT_RING_CONFIG } from '../store/projectStore'
 
+// ── Phase colour palette ──────────────────────────────────────────────────────
+const PH_COLORS = {
+  '1': '#f59e0b', '2': '#10b981', '3': '#3b82f6', '4': '#6366f1',
+  '5': '#ec4899', '6': '#0ea5e9', '7': '#f97316', '8': '#a855f7',
+}
+function phColor(ph) { return PH_COLORS[String(ph)] || '#9ca3af' }
+
+// ── Intersection Phasing Schematic ────────────────────────────────────────────
+//  Top-down view of the intersection showing each L/T/R movement
+//  coloured by its assigned NEMA phase number.
+
+function PhasingSchematic({ ix }) {
+  const pa = ix.phase_assignments || {}
+  const ixType = ix.type || '4-leg'
+
+  const activeDirs = ixType === '2-leg' ? ['NB', 'SB']
+    : ixType === '3-leg' ? ['NB', 'SB', 'EB']
+    : ['NB', 'SB', 'EB', 'WB']
+
+  const W = 360, H = 300
+  const cx = W / 2, cy = H / 2
+  // Intersection box
+  const bW = 76, bH = 76
+  const bx = cx - bW / 2, by = cy - bH / 2
+  // Road half-widths
+  const rHalf = 16   // 16px each direction → 32px total road width
+  // Approach arrow geometry
+  const STUB = 72    // length of road stub beyond box edge
+
+  // Badge element: coloured rect + movement + phase label
+  function Badge({ x, y, mv, ph, rotate = 0 }) {
+    if (!ph) return null
+    const bg = phColor(ph)
+    return (
+      <g transform={`translate(${x},${y}) rotate(${rotate})`}>
+        <rect x={-18} y={-11} width={36} height={22} rx={5} fill={bg} />
+        <text textAnchor="middle" y={-1} fill="#fff" fontSize={9} fontWeight="bold" fontFamily="monospace">{mv}</text>
+        <text textAnchor="middle" y={9}  fill="#fff" fontSize={8} fontFamily="monospace">φ{ph}</text>
+      </g>
+    )
+  }
+
+  // Arrow head helper (draws a filled triangle arrowhead)
+  function Arrowhead({ x, y, angle }) {
+    const r = 5
+    return (
+      <polygon
+        points={`0,${-r} ${r * 0.6},${r * 0.5} ${-r * 0.6},${r * 0.5}`}
+        fill="#9ca3af"
+        transform={`translate(${x},${y}) rotate(${angle})`}
+      />
+    )
+  }
+
+  // Lane centrelines for each direction (right-hand traffic)
+  // NB: right half of NS road → x = cx + rHalf/2
+  // SB: left  half of NS road → x = cx - rHalf/2
+  // EB: bottom half of EW road → y = cy + rHalf/2
+  // WB: top   half of EW road → y = cy - rHalf/2
+  const NB_X = cx + rHalf / 2
+  const SB_X = cx - rHalf / 2
+  const EB_Y = cy + rHalf / 2
+  const WB_Y = cy - rHalf / 2
+
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', overflowX: 'auto' }}>
+      <div>
+        <div className="text-xs font-semibold mb-2" style={{ color: '#111111' }}>Movement → Phase Map</div>
+        <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ display: 'block' }}>
+          {/* Background */}
+          <rect width={W} height={H} fill="#f3f4f6" rx={8} />
+
+          {/* EW road */}
+          <rect x={0} y={cy - rHalf} width={W} height={rHalf * 2} fill="#374151" />
+          {/* NS road */}
+          {activeDirs.some(d => d === 'NB' || d === 'SB') && (
+            <rect x={cx - rHalf} y={0} width={rHalf * 2} height={H} fill="#374151" />
+          )}
+          {/* Intersection box */}
+          <rect x={bx} y={by} width={bW} height={bH} fill="#4b5563" />
+
+          {/* Centre dashes */}
+          <line x1={0} y1={cy} x2={bx} y2={cy} stroke="#9ca3af" strokeWidth={1} strokeDasharray="6 5" />
+          <line x1={bx + bW} y1={cy} x2={W} y2={cy} stroke="#9ca3af" strokeWidth={1} strokeDasharray="6 5" />
+          {activeDirs.some(d => d === 'NB' || d === 'SB') && <>
+            <line x1={cx} y1={0} x2={cx} y2={by} stroke="#9ca3af" strokeWidth={1} strokeDasharray="6 5" />
+            <line x1={cx} y1={by + bH} x2={cx} y2={H} stroke="#9ca3af" strokeWidth={1} strokeDasharray="6 5" />
+          </>}
+
+          {/* Stop bars */}
+          {activeDirs.includes('NB') && <line x1={cx} y1={by + bH} x2={cx + rHalf} y2={by + bH} stroke="#f9fafb" strokeWidth={2} />}
+          {activeDirs.includes('SB') && <line x1={cx - rHalf} y1={by} x2={cx} y2={by} stroke="#f9fafb" strokeWidth={2} />}
+          {activeDirs.includes('EB') && <line x1={bx} y1={cy} x2={bx} y2={cy + rHalf} stroke="#f9fafb" strokeWidth={2} />}
+          {activeDirs.includes('WB') && <line x1={bx + bW} y1={cy - rHalf} x2={bx + bW} y2={cy} stroke="#f9fafb" strokeWidth={2} />}
+
+          {/* Direction travel arrows (thin grey lines with arrowheads) */}
+          {activeDirs.includes('NB') && <>
+            <line x1={NB_X} y1={by + bH + STUB} x2={NB_X} y2={by + bH + 10} stroke="#9ca3af" strokeWidth={1.5} />
+            <Arrowhead x={NB_X} y={by + bH + 10} angle={0} />
+          </>}
+          {activeDirs.includes('SB') && <>
+            <line x1={SB_X} y1={by - STUB} x2={SB_X} y2={by - 10} stroke="#9ca3af" strokeWidth={1.5} />
+            <Arrowhead x={SB_X} y={by - 10} angle={180} />
+          </>}
+          {activeDirs.includes('EB') && <>
+            <line x1={bx - STUB} y1={EB_Y} x2={bx - 10} y2={EB_Y} stroke="#9ca3af" strokeWidth={1.5} />
+            <Arrowhead x={bx - 10} y={EB_Y} angle={90} />
+          </>}
+          {activeDirs.includes('WB') && <>
+            <line x1={bx + bW + STUB} y1={WB_Y} x2={bx + bW + 10} y2={WB_Y} stroke="#9ca3af" strokeWidth={1.5} />
+            <Arrowhead x={bx + bW + 10} y={WB_Y} angle={-90} />
+          </>}
+
+          {/* "N" label */}
+          {activeDirs.includes('NB') && (
+            <text x={cx} y={14} textAnchor="middle" fill="#6b7280" fontSize={10} fontWeight="bold" fontFamily="sans-serif">N</text>
+          )}
+
+          {/* ── NB movement badges (south leg, entering from bottom) ── */}
+          {activeDirs.includes('NB') && (() => {
+            const yRow = by + bH + 42
+            return <>
+              <Badge x={NB_X - 26} y={yRow} mv="L" ph={pa.NB?.L} />
+              <Badge x={NB_X}      y={yRow + 18} mv="T" ph={pa.NB?.T} />
+              <Badge x={NB_X + 26} y={yRow} mv="R" ph={pa.NB?.R} />
+            </>
+          })()}
+
+          {/* ── SB movement badges (north leg, entering from top) ── */}
+          {activeDirs.includes('SB') && (() => {
+            const yRow = by - 42
+            return <>
+              <Badge x={SB_X + 26} y={yRow} mv="L" ph={pa.SB?.L} />
+              <Badge x={SB_X}      y={yRow - 18} mv="T" ph={pa.SB?.T} />
+              <Badge x={SB_X - 26} y={yRow} mv="R" ph={pa.SB?.R} />
+            </>
+          })()}
+
+          {/* ── EB movement badges (west leg, entering from left) ── */}
+          {activeDirs.includes('EB') && (() => {
+            const xCol = bx - 44
+            return <>
+              <Badge x={xCol} y={EB_Y - 26} mv="L" ph={pa.EB?.L} />
+              <Badge x={xCol - 18} y={EB_Y}    mv="T" ph={pa.EB?.T} />
+              <Badge x={xCol} y={EB_Y + 26} mv="R" ph={pa.EB?.R} />
+            </>
+          })()}
+
+          {/* ── WB movement badges (east leg, entering from right) ── */}
+          {activeDirs.includes('WB') && (() => {
+            const xCol = bx + bW + 44
+            return <>
+              <Badge x={xCol} y={WB_Y + 26} mv="L" ph={pa.WB?.L} />
+              <Badge x={xCol + 18} y={WB_Y}    mv="T" ph={pa.WB?.T} />
+              <Badge x={xCol} y={WB_Y - 26} mv="R" ph={pa.WB?.R} />
+            </>
+          })()}
+
+          {/* Intersection label */}
+          <text x={cx} y={cy + 5} textAnchor="middle" fill="#9ca3af" fontSize={9} fontFamily="monospace" fontWeight="bold">
+            {ix.name ? (ix.name.length > 10 ? ix.name.slice(0, 9) + '…' : ix.name) : 'INTERSECTION'}
+          </text>
+        </svg>
+
+        {/* Phase colour legend */}
+        <div className="flex flex-wrap gap-2 mt-2 justify-center">
+          {Object.entries(PH_COLORS).map(([ph, color]) => (
+            <span
+              key={ph}
+              className="inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5"
+              style={{ backgroundColor: color, color: '#fff', borderRadius: 4 }}
+            >
+              φ{ph}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const PLANS = ['AM', 'PM', 'Off-Peak']
 const RECALL_MODES = ['None', 'Min', 'Max', 'Ped']
 const OVERLAP_LABELS = ['A', 'B', 'C', 'D', 'E', 'F']
@@ -720,6 +901,11 @@ export default function RingBarrierEditor({ ix, activePlan, onUpdate }) {
 
   return (
     <div className="space-y-4">
+      {/* ── Phasing schematic ────────────────────────────────────────────── */}
+      <div className="card">
+        <PhasingSchematic ix={ix} />
+      </div>
+
       {/* Plan switcher + reset */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
